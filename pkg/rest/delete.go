@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // RESTDeleteStrategy defines deletion behavior on an object that follows Kubernetes
@@ -14,5 +15,5 @@ type RESTDeleteStrategy interface {
 	// BeginDelete is an optional hook that can be used to indicate the method is supported
 	BeginDelete(ctx context.Context) error
 
-	Delete(ctx context.Context, key string) error
+	Delete(ctx context.Context, key types.NamespacedName) error
 }

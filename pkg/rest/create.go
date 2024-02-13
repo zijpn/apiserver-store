@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/storage/names"
@@ -80,7 +81,7 @@ type RESTCreateStrategy interface {
 	// empty method.
 	Canonicalize(obj runtime.Object)
 
-	Create(ctx context.Context, key string, obj runtime.Object) error
+	Create(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
 }
 
 // BeforeCreate ensures that common operations for all resources are performed on creation. It only returns

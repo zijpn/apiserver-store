@@ -7,48 +7,35 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/validation/path"
+	"k8s.io/apimachinery/pkg/types"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 )
-
-// NamespaceKeyRootFunc is the default function for constructing storage paths
-// to resource directories enforcing namespace rules.
-func NamespaceKeyRootFunc(ctx context.Context, prefix string) string {
-	key := prefix
-	ns, ok := genericapirequest.NamespaceFrom(ctx)
-	if ok && len(ns) > 0 {
-		key = key + "/" + ns
-	}
-	return key
-}
 
 // NamespaceKeyFunc is the default function for constructing storage paths to
 // a resource relative to the given prefix enforcing namespace rules. If the
 // context does not contain a namespace, it errors.
-func NamespaceKeyFunc(ctx context.Context, prefix string, name string) (string, error) {
-	key := NamespaceKeyRootFunc(ctx, prefix)
+func NamespaceKeyFunc(ctx context.Context, prefix string, name string) (types.NamespacedName, error) {
 	ns, ok := genericapirequest.NamespaceFrom(ctx)
 	if !ok || len(ns) == 0 {
-		return "", apierrors.NewBadRequest("Namespace parameter required.")
+		return types.NamespacedName{}, apierrors.NewBadRequest("Namespace parameter required.")
 	}
 	if len(name) == 0 {
-		return "", apierrors.NewBadRequest("Name parameter required.")
+		return types.NamespacedName{}, apierrors.NewBadRequest("Name parameter required.")
 	}
 	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
-		return "", apierrors.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
+		return types.NamespacedName{}, apierrors.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
 	}
-	key = key + "/" + name
-	return key, nil
+	return types.NamespacedName{Namespace: ns, Name: name}, nil
 }
 
 // NoNamespaceKeyFunc is the default function for constructing storage paths
 // to a resource relative to the given prefix without a namespace.
-func NoNamespaceKeyFunc(ctx context.Context, prefix string, name string) (string, error) {
+func NoNamespaceKeyFunc(ctx context.Context, prefix string, name string) (types.NamespacedName, error) {
 	if len(name) == 0 {
-		return "", apierrors.NewBadRequest("Name parameter required.")
+		return types.NamespacedName{}, apierrors.NewBadRequest("Name parameter required.")
 	}
 	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
-		return "", apierrors.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
+		return types.NamespacedName{}, apierrors.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
 	}
-	key := prefix + "/" + name
-	return key, nil
+	return types.NamespacedName{Name: name}, nil
 }

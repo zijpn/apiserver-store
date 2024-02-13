@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -46,19 +47,10 @@ type Store struct {
 	// SingularQualifiedResource is the singular name of the resource.
 	SingularQualifiedResource schema.GroupResource
 
-	// KeyRootFunc returns the root etcd key for this resource; should not
-	// include trailing "/".  This is used for operations that work on the
-	// entire collection (listing and watching).
-	//
-	// KeyRootFunc and KeyFunc must be supplied together or not at all.
-	KeyRootFunc func(ctx context.Context) string
-
 	// KeyFunc returns the key for a specific object in the collection.
 	// KeyFunc is called for Create/Update/Get/Delete. Note that 'namespace'
 	// can be gotten from ctx.
-	//
-	// KeyFunc and KeyRootFunc must be supplied together or not at all.
-	KeyFunc func(ctx context.Context, name string) (string, error)
+	KeyFunc func(ctx context.Context, name string) (types.NamespacedName, error)
 
 	// ObjectNameFunc returns the name of an object or an error.
 	ObjectNameFunc func(obj runtime.Object) (string, error)
@@ -197,19 +189,13 @@ func (r *Store) CompleteWithOptions(options *generic.StoreOptions) error {
 	}
 
 	// Set the default behavior for storage key generation
-	if r.KeyRootFunc == nil && r.KeyFunc == nil {
+	if r.KeyFunc == nil {
 		if isNamespaced {
-			r.KeyRootFunc = func(ctx context.Context) string {
-				return NamespaceKeyRootFunc(ctx, prefix)
-			}
-			r.KeyFunc = func(ctx context.Context, name string) (string, error) {
+			r.KeyFunc = func(ctx context.Context, name string) (types.NamespacedName, error) {
 				return NamespaceKeyFunc(ctx, prefix, name)
 			}
 		} else {
-			r.KeyRootFunc = func(ctx context.Context) string {
-				return prefix
-			}
-			r.KeyFunc = func(ctx context.Context, name string) (string, error) {
+			r.KeyFunc = func(ctx context.Context, name string) (types.NamespacedName, error) {
 				return NoNamespaceKeyFunc(ctx, prefix, name)
 			}
 		}

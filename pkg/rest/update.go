@@ -9,6 +9,7 @@ import (
 	genericvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/api/validation/path"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/warning"
@@ -67,7 +68,7 @@ type RESTUpdateStrategy interface {
 	// there is no resource version specified in the object.
 	AllowUnconditionalUpdate() bool
 
-	Update(ctx context.Context, key string, obj runtime.Object) error
+	Update(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
 }
 
 // TODO: add other common fields that require global validation.
