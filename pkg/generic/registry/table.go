@@ -12,11 +12,11 @@ import (
 )
 
 type TableConvertor struct {
-	resource schema.GroupResource
+	Resource schema.GroupResource
 	// cells creates a single row of cells of the table from a runtime.Object
-	cells func(obj runtime.Object) []interface{}
+	Cells func(obj runtime.Object) []interface{}
 	// columns stores column definitions for the table convertor
-	columns []metav1.TableColumnDefinition
+	Columns []metav1.TableColumnDefinition
 }
 
 // ConvertToTable implements rest.TableConvertor
@@ -24,9 +24,9 @@ func (r TableConvertor) ConvertToTable(ctx context.Context, object runtime.Objec
 	var table metav1.Table
 
 	fn := func(obj runtime.Object) error {
-		cells := r.cells(obj)
+		cells := r.Cells(obj)
 		if len(cells) == 0 {
-			return errNotAcceptable{resource: r.resource}
+			return errNotAcceptable{resource: r.Resource}
 		}
 		table.Rows = append(table.Rows, metav1.TableRow{
 			Cells:  cells,
@@ -59,7 +59,7 @@ func (r TableConvertor) ConvertToTable(ctx context.Context, object runtime.Objec
 		//table.SelfLink = c.GetSelfLink()
 	}
 	if opt, ok := tableOptions.(*metav1.TableOptions); !ok || !opt.NoHeaders {
-		table.ColumnDefinitions = r.columns
+		table.ColumnDefinitions = r.Columns
 	}
 
 	return &table, nil
