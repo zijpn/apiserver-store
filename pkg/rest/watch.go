@@ -13,5 +13,8 @@ import (
 type RESTWatchStrategy interface {
 	runtime.ObjectTyper
 
+	// BeginWatch is an optional hook that can be used to indicate the method is supported
+	BeginWatch(ctx context.Context) error
+
 	Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error)
 }

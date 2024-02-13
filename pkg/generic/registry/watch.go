@@ -17,5 +17,9 @@ func (r *Store) Watch(ctx context.Context, options *metainternalversion.ListOpti
 	log := log.FromContext(ctx)
 	log.Info("watch")
 
+	if err := r.WatchStrategy.BeginWatch(ctx); err != nil {
+		return nil, err
+	}
+
 	return r.WatchStrategy.Watch(ctx, options)
 }
