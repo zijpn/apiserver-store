@@ -89,10 +89,10 @@ type Store struct {
 	DeleteCollectionWorkers int
 
 	// GetStrategy implements resource-specific behavior during get.
-	GetStrategy reststore.GetStrategy
+	GetStrategy reststore.RESTGetStrategy
 
 	// ListStrategy implements resource-specific behavior during list.
-	ListStrategy reststore.ListStrategy
+	ListStrategy reststore.RESTListStrategy
 
 	// CreateStrategy implements resource-specific behavior during creation.
 	CreateStrategy reststore.RESTCreateStrategy

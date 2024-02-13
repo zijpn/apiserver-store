@@ -7,6 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type ListStrategy interface {
+type RESTListStrategy interface {
 	List(ctx context.Context, options *metainternalversion.ListOptions) (runtime.Object, error)
 }
