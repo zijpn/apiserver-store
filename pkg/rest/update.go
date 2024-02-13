@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	genericvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/api/validation/path"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
@@ -25,15 +24,8 @@ type RESTUpdateStrategy interface {
 	NamespaceScoped() bool
 	// AllowCreateOnUpdate returns true if the object can be created by a PUT.
 	AllowCreateOnUpdate() bool
-	// BeginUpdate is an optional hook that returns a "transaction-like"
-	// commit/revert function which will be called at the end of the operation,
-	// but before AfterUpdate and Decorator, indicating via the argument
-	// whether the operation succeeded.  If this returns an error, the function
-	// is not called.  Almost nobody should use this hook.
-	BeginUpdate(ctx context.Context, obj, old runtime.Object, options *metav1.UpdateOptions) (FinishFunc, error)
-	// AfterUpdate implements a further operation to run after a resource is
-	// updated and before it is decorated, optional.
-	AfterUpdate(obj runtime.Object, options *metav1.UpdateOptions)
+	// BeginUpdate is an optional hook that can be used to indicate the method is supported
+	BeginUpdate(ctx context.Context) error
 
 	// PrepareForUpdate is invoked on update before validation to normalize
 	// the object.  For example: remove fields that are not to be persisted,

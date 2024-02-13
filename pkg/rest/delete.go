@@ -3,7 +3,6 @@ package rest
 import (
 	"context"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -12,9 +11,8 @@ import (
 type RESTDeleteStrategy interface {
 	runtime.ObjectTyper
 
-	// AfterDelete implements a further operation to run after a resource is
-	// deleted and before it is decorated, optional.
-	AfterDelete(obj runtime.Object, options *metav1.DeleteOptions)
+	// BeginDelete is an optional hook that can be used to indicate the method is supported
+	BeginDelete(ctx context.Context) error
 
 	Delete(ctx context.Context, key string) error
 }

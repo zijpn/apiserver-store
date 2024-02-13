@@ -34,15 +34,8 @@ type RESTCreateStrategy interface {
 
 	// NamespaceScoped returns true if the object must be within a namespace.
 	NamespaceScoped() bool
-	// BeginCreate is an optional hook that returns a "transaction-like"
-	// commit/revert function which will be called at the end of the operation,
-	// but before AfterCreate and Decorator, indicating via the argument
-	// whether the operation succeeded.  If this returns an error, the function
-	// is not called.  Almost nobody should use this hook.
-	BeginCreate(ctx context.Context, obj runtime.Object, options *metav1.CreateOptions) (FinishFunc, error)
-	// AfterCreate implements a further operation to run after a resource is
-	// created and before it is decorated, optional.
-	AfterCreate(obj runtime.Object, options *metav1.CreateOptions)
+	// BeginCreate is an optional hook that can be used to indicate the method is supported
+	BeginCreate(ctx context.Context) error
 
 	// PrepareForCreate is invoked on create before validation to normalize
 	// the object.  For example: remove fields that are not to be persisted,
