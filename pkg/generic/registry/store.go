@@ -103,7 +103,7 @@ type Store struct {
 	// DeleteStrategy implements resource-specific behavior during deletion.
 	DeleteStrategy reststore.RESTDeleteStrategy
 
-	WatchStrategy reststore.RESWatchStrategy
+	WatchStrategy reststore.RESTWatchStrategy
 
 	// ReturnDeletedObject determines whether the Store returns the object
 	// that was deleted. Otherwise, return a generic success status response.
