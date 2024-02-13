@@ -10,7 +10,7 @@ import (
 
 // RESWatchStrategy defines watch behavior on an object that follows Kubernetes
 // API conventions.
-type RESWatchStrategy interface {
+type RESTWatchStrategy interface {
 	runtime.ObjectTyper
 
 	Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error)
