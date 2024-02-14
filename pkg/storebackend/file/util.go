@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/henderiw/logger/log"
-	"github.com/henderiw/apiserver-store/pkg/store"
+	"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
