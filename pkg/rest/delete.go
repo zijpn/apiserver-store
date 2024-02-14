@@ -15,5 +15,5 @@ type RESTDeleteStrategy interface {
 	// BeginDelete is an optional hook that can be used to indicate the method is supported
 	BeginDelete(ctx context.Context) error
 
-	Delete(ctx context.Context, key types.NamespacedName) error
+	Delete(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
 }

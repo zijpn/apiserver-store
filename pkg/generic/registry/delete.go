@@ -62,7 +62,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	// check if obj has pending finalizers
 	// TODO finalizers
 
-	if derr := r.DeleteStrategy.Delete(ctx, key); derr != nil {
+	if derr := r.DeleteStrategy.Delete(ctx, key, obj); derr != nil {
 		obj, err = r.finalizeDelete(ctx, obj, true, options)
 		return obj, false, apierrors.NewInternalError(errors.Join(derr, err))
 	}
