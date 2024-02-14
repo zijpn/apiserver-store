@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/henderiw/logger/log"
 	"github.com/henderiw/apiserver-store/pkg/store"
+	"github.com/henderiw/logger/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -32,7 +32,7 @@ const (
 )
 
 func NewStore[T1 any](cfg *store.Config[T1]) (store.Storer[T1], error) {
-	objRootPath := filepath.Join(cfg.Prefix, cfg.GroupResource.Group, cfg.GroupResource.Resource)
+	objRootPath := filepath.Join(cfg.RootPath, cfg.GroupResource.Group, cfg.GroupResource.Resource)
 	if err := ensureDir(objRootPath); err != nil {
 		return nil, fmt.Errorf("unable to write data dir: %s", err)
 	}
@@ -50,11 +50,11 @@ type file[T1 any] struct {
 }
 
 // Get return the type
-func (r *file[T1]) Get(ctx context.Context, key string) (T1, error) {
+func (r *file[T1]) Get(ctx context.Context, key store.Key) (T1, error) {
 	return r.readFile(ctx, key)
 }
 
-func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key string, obj T1)) {
+func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key store.Key, obj T1)) {
 	log := log.FromContext(ctx)
 
 	if err := r.visitDir(ctx, visitorFunc); err != nil {
@@ -62,10 +62,10 @@ func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Contex
 	}
 }
 
-func (r *file[T1]) Create(ctx context.Context, key string, data T1) error {
+func (r *file[T1]) Create(ctx context.Context, key store.Key, data T1) error {
 	// if an error is returned the entry already exists
 	if _, err := r.Get(ctx, key); err == nil {
-		return fmt.Errorf("duplicate entry %v", key)
+		return fmt.Errorf("duplicate entry %v", key.String())
 	}
 	// update the store before calling the callback since the cb fn will use this data
 	if err := r.update(ctx, key, data); err != nil {
@@ -77,7 +77,7 @@ func (r *file[T1]) Create(ctx context.Context, key string, data T1) error {
 }
 
 // Upsert creates or updates the entry in the cache
-func (r *file[T1]) Update(ctx context.Context, key string, data T1) error {
+func (r *file[T1]) Update(ctx context.Context, key store.Key, data T1) error {
 	/*
 		exists := true
 		oldd, err := r.Get(ctx, key)
@@ -104,16 +104,16 @@ func (r *file[T1]) Update(ctx context.Context, key string, data T1) error {
 	return nil
 }
 
-func (r *file[T1]) update(ctx context.Context, key string, newd T1) error {
+func (r *file[T1]) update(ctx context.Context, key store.Key, newd T1) error {
 	return r.writeFile(ctx, key, newd)
 }
 
-func (r *file[T1]) delete(ctx context.Context, key string) error {
+func (r *file[T1]) delete(ctx context.Context, key store.Key) error {
 	return r.deleteFile(ctx, key)
 }
 
 // Delete deletes the entry in the cache
-func (r *file[T1]) Delete(ctx context.Context, key string) error {
+func (r *file[T1]) Delete(ctx context.Context, key store.Key) error {
 	// only if an exisitng object gets deleted we
 	// call the registered callbacks
 	//exists := true

@@ -26,19 +26,19 @@ import (
 // Storer defines the interface for a generic storage system.
 type Storer[T1 any] interface {
 	// Retrieve retrieves data for the given key from the storage
-	Get(ctx context.Context, key string) (T1, error)
+	Get(ctx context.Context, key Key) (T1, error)
 
 	// Retrieve retrieves data for the given key from the storage
-	List(ctx context.Context, visitorFunc func(context.Context, string, T1))
+	List(ctx context.Context, visitorFunc func(context.Context, Key, T1))
 
 	// Create data with the given key in the storage
-	Create(ctx context.Context, key string, data T1) error
+	Create(ctx context.Context, key Key, data T1) error
 
 	// Update data with the given key in the storage
-	Update(ctx context.Context, key string, data T1) error
+	Update(ctx context.Context, key Key, data T1) error
 
 	// Delete deletes data and key from the storage
-	Delete(ctx context.Context, key string) error
+	Delete(ctx context.Context, key Key) error
 
 	// Watch watches change
 	//Watch(ctx context.Context) (watch.Interface[T1], error)
@@ -46,7 +46,7 @@ type Storer[T1 any] interface {
 
 type Config[T1 any] struct {
 	GroupResource schema.GroupResource
-	Prefix        string
+	RootPath      string
 	Codec         runtime.Codec
 	NewFunc       func() runtime.Object
 }

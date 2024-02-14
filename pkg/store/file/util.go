@@ -26,14 +26,19 @@ import (
 	"strings"
 
 	"github.com/henderiw/logger/log"
+	"github.com/henderiw/apiserver-store/pkg/store"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
-func (r *file[T1]) filename(key string) string {
-	return filepath.Join(r.objRootPath, key+".json")
+func (r *file[T1]) filename(key store.Key) string {
+	if key.Namespace != "" {
+		return filepath.Join(r.objRootPath, key.Namespace, key.Name+".json")
+	}
+	return filepath.Join(r.objRootPath, key.Name+".json")
 }
 
-func (r *file[T1]) readFile(ctx context.Context, key string) (T1, error) {
+func (r *file[T1]) readFile(ctx context.Context, key store.Key) (T1, error) {
 	log := log.FromContext(ctx)
 	var obj T1
 	content, err := os.ReadFile(filepath.Clean(r.filename(key)))
@@ -61,7 +66,7 @@ func convert(obj any) (runtime.Object, error) {
 	return runtimeObj, nil
 }
 
-func (r *file[T1]) writeFile(ctx context.Context, key string, obj T1) error {
+func (r *file[T1]) writeFile(ctx context.Context, key store.Key, obj T1) error {
 	log := log.FromContext(ctx)
 
 	runtimeObj, err := convert(obj)
@@ -81,11 +86,11 @@ func (r *file[T1]) writeFile(ctx context.Context, key string, obj T1) error {
 	return os.WriteFile(r.filename(key), buf.Bytes(), 0644)
 }
 
-func (r *file[T1]) deleteFile(ctx context.Context, key string) error {
+func (r *file[T1]) deleteFile(ctx context.Context, key store.Key) error {
 	return os.Remove(r.filename(key))
 }
 
-func (r *file[T1]) visitDir(ctx context.Context, visitorFunc func(ctx context.Context, key string, obj T1)) error {
+func (r *file[T1]) visitDir(ctx context.Context, visitorFunc func(ctx context.Context, key store.Key, obj T1)) error {
 	return filepath.Walk(r.objRootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -99,25 +104,23 @@ func (r *file[T1]) visitDir(ctx context.Context, visitorFunc func(ctx context.Co
 		}
 		// this is a json file by now
 		// next step is find the key (namespace and name)
-		/*
-			name := strings.TrimSuffix(filepath.Base(path), ".json")
-			namespace := ""
-			pathSplit := strings.Split(path, "/")
-			if len(pathSplit) > (len(strings.Split(r.objRootPath, "/")) + 1) {
-				namespace = pathSplit[len(pathSplit)-2]
-			}
-			key := store.KeyFromNSN(types.NamespacedName{
-				Name:      name,
-				Namespace: namespace,
-			})
-		*/
+		name := strings.TrimSuffix(filepath.Base(path), ".json")
+		namespace := ""
+		pathSplit := strings.Split(path, "/")
+		if len(pathSplit) > (len(strings.Split(r.objRootPath, "/")) + 1) {
+			namespace = pathSplit[len(pathSplit)-2]
+		}
+		key := store.KeyFromNSN(types.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		})
 
-		newObj, err := r.readFile(ctx, path)
+		newObj, err := r.readFile(ctx, key)
 		if err != nil {
 			return err
 		}
 		if visitorFunc != nil {
-			visitorFunc(ctx, path, newObj)
+			visitorFunc(ctx, key, newObj)
 		}
 
 		return nil
