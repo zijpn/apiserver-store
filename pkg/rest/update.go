@@ -68,7 +68,7 @@ type RESTUpdateStrategy interface {
 	// there is no resource version specified in the object.
 	AllowUnconditionalUpdate() bool
 
-	Update(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
+	Update(ctx context.Context, key types.NamespacedName, obj, old runtime.Object) error
 }
 
 // TODO: add other common fields that require global validation.
