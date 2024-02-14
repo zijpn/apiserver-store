@@ -14,7 +14,7 @@ import (
 // NamespaceKeyFunc is the default function for constructing storage paths to
 // a resource relative to the given prefix enforcing namespace rules. If the
 // context does not contain a namespace, it errors.
-func NamespaceKeyFunc(ctx context.Context, prefix string, name string) (types.NamespacedName, error) {
+func NamespaceKeyFunc(ctx context.Context, name string) (types.NamespacedName, error) {
 	ns, ok := genericapirequest.NamespaceFrom(ctx)
 	if !ok || len(ns) == 0 {
 		return types.NamespacedName{}, apierrors.NewBadRequest("Namespace parameter required.")
@@ -30,7 +30,7 @@ func NamespaceKeyFunc(ctx context.Context, prefix string, name string) (types.Na
 
 // NoNamespaceKeyFunc is the default function for constructing storage paths
 // to a resource relative to the given prefix without a namespace.
-func NoNamespaceKeyFunc(ctx context.Context, prefix string, name string) (types.NamespacedName, error) {
+func NoNamespaceKeyFunc(ctx context.Context, name string) (types.NamespacedName, error) {
 	if len(name) == 0 {
 		return types.NamespacedName{}, apierrors.NewBadRequest("Name parameter required.")
 	}

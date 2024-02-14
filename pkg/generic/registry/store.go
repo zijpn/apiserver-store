@@ -3,7 +3,6 @@ package registry
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 	"go.opentelemetry.io/otel"
@@ -154,9 +153,6 @@ func (r *Store) CompleteWithOptions(options *generic.StoreOptions) error {
 		return fmt.Errorf("store for %s must have ListStrategy set", r.DefaultQualifiedResource.String())
 	}
 
-	if options.RESTOptions == nil {
-		return fmt.Errorf("options for %s must have RESTOptions set", r.DefaultQualifiedResource.String())
-	}
 	attrFunc := options.AttrFunc
 	if attrFunc == nil {
 		if isNamespaced {
@@ -175,28 +171,30 @@ func (r *Store) CompleteWithOptions(options *generic.StoreOptions) error {
 		}
 	}
 
-	opts, err := options.RESTOptions.GetRESTOptions(r.DefaultQualifiedResource)
-	if err != nil {
-		return err
-	}
-	// ResourcePrefix must come from the underlying factory
-	prefix := opts.ResourcePrefix
-	if !strings.HasPrefix(prefix, "/") {
-		prefix = "/" + prefix
-	}
-	if prefix == "/" {
-		return fmt.Errorf("store for %s has an invalid prefix %q", r.DefaultQualifiedResource.String(), opts.ResourcePrefix)
-	}
+	/*
+		opts, err := options.RESTOptions.GetRESTOptions(r.DefaultQualifiedResource)
+		if err != nil {
+			return err
+		}
+		// ResourcePrefix must come from the underlying factory
+		prefix := opts.ResourcePrefix
+		if !strings.HasPrefix(prefix, "/") {
+			prefix = "/" + prefix
+		}
+		if prefix == "/" {
+			return fmt.Errorf("store for %s has an invalid prefix %q", r.DefaultQualifiedResource.String(), opts.ResourcePrefix)
+		}
+	*/
 
 	// Set the default behavior for storage key generation
 	if r.KeyFunc == nil {
 		if isNamespaced {
 			r.KeyFunc = func(ctx context.Context, name string) (types.NamespacedName, error) {
-				return NamespaceKeyFunc(ctx, prefix, name)
+				return NamespaceKeyFunc(ctx, name)
 			}
 		} else {
 			r.KeyFunc = func(ctx context.Context, name string) (types.NamespacedName, error) {
-				return NoNamespaceKeyFunc(ctx, prefix, name)
+				return NoNamespaceKeyFunc(ctx, name)
 			}
 		}
 	}
