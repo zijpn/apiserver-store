@@ -36,11 +36,10 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	}
 	qualifiedResource := r.qualifiedResourceFromContext(ctx)
 
-	existing, err := r.GetStrategy.Get(ctx, key)
+	obj, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
 		return nil, false, apierrors.NewNotFound(qualifiedResource, name)
 	}
-	obj := existing.DeepCopyObject()
 
 	// support older consumers of delete by treating "nil" as delete immediately
 	if options == nil {

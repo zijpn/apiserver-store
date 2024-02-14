@@ -45,9 +45,8 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 			return nil, creating, apierrors.NewNotFound(qualifiedResource, name)
 		}
 	}
-	old := existing.DeepCopyObject()
 
-	obj, err := objInfo.UpdatedObject(ctx, old)
+	obj, err := objInfo.UpdatedObject(ctx, existing)
 	if err != nil {
 		log.Error("update failed to construct UpdatedObject", "error", err.Error())
 		return nil, creating, err
