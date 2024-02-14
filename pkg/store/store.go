@@ -46,7 +46,7 @@ type Storer[T1 any] interface {
 
 type Config[T1 any] struct {
 	GroupResource schema.GroupResource
-	RootPath      string
+	Prefix        string
 	Codec         runtime.Codec
 	NewFunc       func() runtime.Object
 }
