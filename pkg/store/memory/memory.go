@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sdcio/config-server/pkg/store"
+	"github.com/henderiw/apiserver-store/pkg/store"
 )
 
 const (

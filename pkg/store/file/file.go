@@ -32,7 +32,7 @@ const (
 )
 
 func NewStore[T1 any](cfg *store.Config[T1]) (store.Storer[T1], error) {
-	objRootPath := filepath.Join(cfg.RootPath, cfg.GroupResource.Group, cfg.GroupResource.Resource)
+	objRootPath := filepath.Join(cfg.Prefix, cfg.GroupResource.Group, cfg.GroupResource.Resource)
 	if err := ensureDir(objRootPath); err != nil {
 		return nil, fmt.Errorf("unable to write data dir: %s", err)
 	}
