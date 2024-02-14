@@ -33,6 +33,7 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		if len(objectMeta.GetGenerateName()) > 0 && len(objectMeta.GetName()) == 0 {
 			objectMeta.SetName(r.CreateStrategy.GenerateName(objectMeta.GetGenerateName()))
 		}
+		objectMeta.SetResourceVersion("0")
 	}
 
 	if err := reststore.BeforeCreate(r.CreateStrategy, ctx, obj); err != nil {

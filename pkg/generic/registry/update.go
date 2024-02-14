@@ -3,12 +3,14 @@ package registry
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 	"github.com/henderiw/logger/log"
 	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -63,11 +65,33 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		}
 	}
 
+	if err := updateResourceVersion(ctx, obj, existing); err != nil {
+		return nil, creating, apierrors.NewInternalError(err)
+	}
+
 	if err := r.UpdateStrategy.Update(ctx, key, obj); err != nil {
 		// TODO see if we need to return more errors
 		return nil, creating, apierrors.NewInternalError(err)
 	}
 
-	// The operation has succeeded.  
+	// The operation has succeeded.
 	return obj, creating, nil
+}
+
+func updateResourceVersion(ctx context.Context, obj, old runtime.Object) error {
+	accessorNew, err := meta.Accessor(obj)
+	if err != nil {
+		return nil
+	}
+	accessorOld, err := meta.Accessor(old)
+	if err != nil {
+		return nil
+	}
+	resourceVersion, err := strconv.Atoi(accessorOld.GetResourceVersion())
+	if err != nil {
+		return err
+	}
+	resourceVersion++
+	accessorNew.SetResourceVersion(strconv.Itoa(resourceVersion))
+	return nil
 }
