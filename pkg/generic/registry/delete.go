@@ -305,14 +305,12 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name
 			if err != nil {
 				return false, obj, err
 			}
-			if err := r.UpdateStrategy.Update(ctx, key, obj, old); err != nil {
+			obj, err := r.UpdateStrategy.Update(ctx, key, obj, old)
+			if err != nil {
 				return false, obj, err
 			}
 			// If there are pending finalizers, we never delete the object immediately.
 			if pendingFinalizers {
-				return false, obj, nil
-			}
-			if lastGraceful > 0 {
 				return false, obj, nil
 			}
 			// If we are here, the registry supports grace period mechanism and
@@ -329,7 +327,8 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name
 		// we should fall through and truly delete the object.
 		return true, obj, nil
 	}
-	if err := r.UpdateStrategy.Update(ctx, key, obj, old); err != nil {
+	obj, err = r.UpdateStrategy.Update(ctx, key, obj, old)
+	if err != nil {
 		return false, obj, err
 	}
 	lastGraceful = *options.GracePeriodSeconds

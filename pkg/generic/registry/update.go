@@ -98,9 +98,10 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		return obj, false, nil
 	}
 
-	if err := r.UpdateStrategy.Update(ctx, key, obj, existing); err != nil {
+	obj, err = r.UpdateStrategy.Update(ctx, key, obj, existing)
+	if err != nil {
 		// TODO see if we need to return more errors
-		return nil, creating, apierrors.NewInternalError(err)
+		return obj, creating, apierrors.NewInternalError(err)
 	}
 
 	// The operation has succeeded.
