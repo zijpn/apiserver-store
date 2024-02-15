@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/henderiw/logger/log"
 	"go.opentelemetry.io/otel/trace"
@@ -12,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
@@ -50,7 +53,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 		preconditions.UID = options.Preconditions.UID
 		preconditions.ResourceVersion = options.Preconditions.ResourceVersion
 	}
-	_, pendingGraceful, err := rest.BeforeDelete(r.DeleteStrategy, ctx, obj, options)
+	graceful, pendingGraceful, err := rest.BeforeDelete(r.DeleteStrategy, ctx, obj, options)
 	if err != nil {
 		return nil, false, err
 	}
@@ -60,7 +63,25 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 		return out, false, err
 	}
 	// check if obj has pending finalizers
-	// TODO finalizers
+	accessor, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, false, apierrors.NewInternalError(err)
+	}
+	pendingFinalizers := len(accessor.GetFinalizers()) != 0
+	var deleteImmediately bool = true
+	var out runtime.Object
+
+	// Handle combinations of graceful deletion and finalization by issuing
+	// the correct updates.
+	shouldUpdateFinalizers, _ := deletionFinalizersForGarbageCollection(ctx, r, accessor, options)
+	// TODO: remove the check, because we support no-op updates now.
+	if graceful || pendingFinalizers || shouldUpdateFinalizers {
+		deleteImmediately, out, err = r.updateForGracefulDeletionAndFinalizers(ctx, name, key, options, preconditions, deleteValidation, obj)
+	}
+	// !deleteImmediately covers all cases where err != nil. We keep both to be future-proof.
+	if !deleteImmediately || err != nil {
+		return out, false, err
+	}
 
 	if derr := r.DeleteStrategy.Delete(ctx, key, obj); derr != nil {
 		obj, err = r.finalizeDelete(ctx, obj, true, options)
@@ -103,7 +124,6 @@ func (r *Store) finalizeDelete(ctx context.Context, obj runtime.Object, runHooks
 	return status, nil
 }
 
-/*
 // deletionFinalizersForGarbageCollection analyzes the object and delete options
 // to determine whether the object is in need of finalization by the garbage
 // collector. If so, returns the set of deletion finalizers to apply and a bool
@@ -142,17 +162,7 @@ func deletionFinalizersForGarbageCollection(ctx context.Context, r *Store, acces
 	}
 	return true, newFinalizers
 }
-*/
 
-/*
-var (
-	errAlreadyDeleting   = fmt.Errorf("abort delete")
-	errDeleteNow         = fmt.Errorf("delete now")
-	errEmptiedFinalizers = fmt.Errorf("emptied finalizers")
-)
-*/
-
-/*
 // shouldOrphanDependents returns true if the finalizer for orphaning should be set
 // updated for FinalizerOrphanDependents. In the order of highest to lowest
 // priority, there are three factors affect whether to add/remove the
@@ -201,9 +211,7 @@ func shouldOrphanDependents(ctx context.Context, e *Store, accessor metav1.Objec
 	// Get default orphan policy from this REST object type if it exists
 	return defaultGCPolicy == rest.OrphanDependents
 }
-*/
 
-/*
 // shouldDeleteDependents returns true if the finalizer for foreground deletion should be set
 // updated for FinalizerDeleteDependents. In the order of highest to lowest
 // priority, there are three factors affect whether to add/remove the
@@ -244,4 +252,125 @@ func shouldDeleteDependents(ctx context.Context, e *Store, accessor metav1.Objec
 
 	return false
 }
-*/
+
+// updateForGracefulDeletionAndFinalizers updates the given object for
+// graceful deletion and finalization by setting the deletion timestamp and
+// grace period seconds (graceful deletion) and updating the list of
+// finalizers (finalization); it returns:
+//
+//  1. a boolean indicating that the object's grace period is exhausted and it
+//     should be deleted immediately
+//  2. a new output object with the state that was updated
+//  3. a copy of the last existing state of the object
+//  4. an error
+func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name string, key types.NamespacedName, options *metav1.DeleteOptions, preconditions storage.Preconditions, deleteValidation rest.ValidateObjectFunc, obj runtime.Object) (deleteImmediately bool, out runtime.Object, err error) {
+	log := log.FromContext(ctx)
+	lastGraceful := int64(0)
+	var pendingFinalizers bool
+
+	if err := deleteValidation(ctx, obj); err != nil {
+		return false, obj, err
+	}
+
+	graceful, pendingGraceful, err := rest.BeforeDelete(r.DeleteStrategy, ctx, obj, options)
+	if err != nil {
+		return false, obj, err
+	}
+	if pendingGraceful {
+		// already deleting
+		out, err = r.finalizeDelete(ctx, obj, true, options)
+		return false, out, err
+	}
+
+	old := obj.DeepCopyObject()
+
+	// Add/remove the orphan finalizer as the options dictates.
+	// Note that this occurs after checking pendingGraceufl, so
+	// finalizers cannot be updated via DeleteOptions if deletion has
+	// started.
+	existingAccessor, err := meta.Accessor(obj)
+	if err != nil {
+		return false, obj, err
+	}
+	needsUpdate, newFinalizers := deletionFinalizersForGarbageCollection(ctx, r, existingAccessor, options)
+	if needsUpdate {
+		existingAccessor.SetFinalizers(newFinalizers)
+	}
+	pendingFinalizers = len(existingAccessor.GetFinalizers()) != 0
+	if !graceful {
+		// set the DeleteGracePeriods to 0 if the object has pendingFinalizers but not supporting graceful deletion
+		if pendingFinalizers {
+			log.Info("Object has pending finalizers, so the registry is going to update its status to deleting", "object", existingAccessor.GetName())
+			err = markAsDeleting(obj, time.Now())
+			if err != nil {
+				return false, obj, err
+			}
+			if err := r.UpdateStrategy.Update(ctx, key, obj, old); err != nil {
+				return false, obj, err
+			}
+			// If there are pending finalizers, we never delete the object immediately.
+			if pendingFinalizers {
+				return false, obj, nil
+			}
+			if lastGraceful > 0 {
+				return false, obj, nil
+			}
+			// If we are here, the registry supports grace period mechanism and
+			// we are intentionally delete gracelessly. In this case, we may
+			// enter a race with other k8s components. If other component wins
+			// the race, the object will not be found, and we should tolerate
+			// the NotFound error. See
+			// https://github.com/kubernetes/kubernetes/issues/19403 for
+			// details.
+			return true, obj, nil
+		}
+		// deleteNow
+		// we've updated the object to have a zero grace period, or it's already at 0, so
+		// we should fall through and truly delete the object.
+		return true, obj, nil
+	}
+	if err := r.UpdateStrategy.Update(ctx, key, obj, old); err != nil {
+		return false, obj, err
+	}
+	lastGraceful = *options.GracePeriodSeconds
+	// If there are pending finalizers, we never delete the object immediately.
+	if pendingFinalizers {
+		return false, obj, nil
+	}
+	if lastGraceful > 0 {
+		return false, obj, nil
+	}
+	// If we are here, the registry supports grace period mechanism and
+	// we are intentionally delete gracelessly. In this case, we may
+	// enter a race with other k8s components. If other component wins
+	// the race, the object will not be found, and we should tolerate
+	// the NotFound error. See
+	// https://github.com/kubernetes/kubernetes/issues/19403 for
+	// details.
+	return true, obj, nil
+}
+
+// markAsDeleting sets the obj's DeletionGracePeriodSeconds to 0, and sets the
+// DeletionTimestamp to "now" if there is no existing deletionTimestamp or if the existing
+// deletionTimestamp is further in future. Finalizers are watching for such updates and will
+// finalize the object if their IDs are present in the object's Finalizers list.
+func markAsDeleting(obj runtime.Object, now time.Time) (err error) {
+	objectMeta, kerr := meta.Accessor(obj)
+	if kerr != nil {
+		return kerr
+	}
+	// This handles Generation bump for resources that don't support graceful
+	// deletion. For resources that support graceful deletion is handle in
+	// pkg/api/rest/delete.go
+	if objectMeta.GetDeletionTimestamp() == nil && objectMeta.GetGeneration() > 0 {
+		objectMeta.SetGeneration(objectMeta.GetGeneration() + 1)
+	}
+	existingDeletionTimestamp := objectMeta.GetDeletionTimestamp()
+	if existingDeletionTimestamp == nil || existingDeletionTimestamp.After(now) {
+		metaNow := metav1.NewTime(now)
+		objectMeta.SetDeletionTimestamp(&metaNow)
+	}
+	var zero int64 = 0
+	objectMeta.SetDeletionGracePeriodSeconds(&zero)
+	return nil
+}

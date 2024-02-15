@@ -3,15 +3,19 @@ package registry
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 	"github.com/henderiw/logger/log"
 	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
+)
+
+const (
+	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 )
 
 // Update performs an atomic update and set of the object. Returns the result of the update
@@ -37,19 +41,29 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 
 	existing, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
-		log.Error("update", "err", err.Error())
-		if forceAllowCreate && strings.Contains(err.Error(), "not found") {
-			// For server-side apply, we can create the object here
-			creating = true
-		} else {
+		if !r.UpdateStrategy.AllowCreateOnUpdate() && !forceAllowCreate {
 			return nil, creating, apierrors.NewNotFound(qualifiedResource, name)
 		}
+		creating = true
 	}
 
 	obj, err := objInfo.UpdatedObject(ctx, existing)
 	if err != nil {
 		log.Error("update failed to construct UpdatedObject", "error", err.Error())
 		return nil, creating, err
+	}
+
+	if creating {
+		obj, err := r.Create(ctx, obj, createValidation, &metav1.CreateOptions{
+			TypeMeta:        options.TypeMeta,
+			DryRun:          options.DryRun,
+			FieldManager:    options.FieldManager,
+			FieldValidation: options.FieldValidation,
+		})
+		if err != nil {
+			return nil, creating, err
+		}
+		return obj, creating, nil
 	}
 
 	if err := reststore.BeforeUpdate(r.UpdateStrategy, ctx, obj, existing); err != nil {
@@ -61,6 +75,27 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		if err := updateValidation(ctx, obj.DeepCopyObject(), existing.DeepCopyObject()); err != nil {
 			return nil, creating, err
 		}
+	}
+
+	newaccessor, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, creating, err
+	}
+
+	oldaccessor, err := meta.Accessor(existing)
+	if err != nil {
+		return nil, creating, err
+	}
+
+	if newaccessor.GetResourceVersion() != oldaccessor.GetResourceVersion() {
+		return nil, false, apierrors.NewConflict(r.DefaultQualifiedResource, oldaccessor.GetName(), fmt.Errorf(OptimisticLockErrorMsg))
+	}
+	if oldaccessor.GetDeletionTimestamp() != nil && len(newaccessor.GetFinalizers()) == 0 {
+		if err := r.DeleteStrategy.Delete(ctx, key, obj); err != nil {
+			return nil, false, apierrors.NewInternalError(err)
+		}
+		// deleted
+		return obj, false, nil
 	}
 
 	if err := r.UpdateStrategy.Update(ctx, key, obj, existing); err != nil {
