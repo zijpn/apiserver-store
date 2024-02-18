@@ -62,6 +62,10 @@ func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Contex
 	}
 }
 
+func (r *file[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) {
+	// not implemented
+}
+
 func (r *file[T1]) Create(ctx context.Context, key storebackend.Key, data T1) error {
 	// if an error is returned the entry already exists
 	if _, err := r.Get(ctx, key); err == nil {
