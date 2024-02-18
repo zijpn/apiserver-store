@@ -64,13 +64,23 @@ func (r *mem[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context
 }
 
 func (r *mem[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) {
-	r.m.RLock()
-	defer r.m.RUnlock()
+	r.m.Lock()
+	defer r.m.Unlock()
 
 	for key, obj := range r.db {
 		if updateFunc != nil {
 			r.db[key] = updateFunc(ctx, key, obj)
 		}
+	}
+}
+
+func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	obj := r.db[key]
+	if updateFunc != nil {
+		r.db[key] = updateFunc(ctx, obj)
 	}
 }
 
