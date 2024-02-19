@@ -52,7 +52,7 @@ func (r *mem[T1]) Get(ctx context.Context, key storebackend.Key) (T1, error) {
 	return x, nil
 }
 
-func (r *mem[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj T1)) {
+func (r *mem[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj T1)) error {
 	r.m.RLock()
 	defer r.m.RUnlock()
 
@@ -61,9 +61,10 @@ func (r *mem[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context
 			visitorFunc(ctx, key, obj)
 		}
 	}
+	return nil
 }
 
-func (r *mem[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) {
+func (r *mem[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -72,9 +73,10 @@ func (r *mem[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.
 			r.db[key] = updateFunc(ctx, key, obj)
 		}
 	}
+	return nil
 }
 
-func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) {
+func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -82,6 +84,7 @@ func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, upd
 	if updateFunc != nil {
 		r.db[key] = updateFunc(ctx, obj)
 	}
+	return nil
 }
 
 func (r *mem[T1]) Create(ctx context.Context, key storebackend.Key, data T1) error {
