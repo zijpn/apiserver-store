@@ -54,6 +54,7 @@ type badgerDB[T1 any] struct {
 	db        *badger.DB
 	cfg       *storebackend.Config[T1]
 }
+
 // Retrieve retrieves data for the given key from the storage
 func (r *badgerDB[T1]) Get(ctx context.Context, key storebackend.Key) (T1, error) {
 	k := r.createKey(key)
@@ -92,28 +93,27 @@ func (r *badgerDB[T1]) List(ctx context.Context, visitorFunc func(context.Contex
 		for it.Seek(r.prefixKey); it.ValidForPrefix(r.prefixKey); it.Next() {
 			item := it.Item()
 			k := item.KeyCopy(nil)
-			b, err := item.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
 			key, err := r.decodeKey(k)
 			if err != nil {
 				return err
 			}
-
-			newObj := r.cfg.NewFunc()
-			decodeObj, _, err := r.cfg.Codec.Decode(b, nil, newObj)
-			if err != nil {
+			if err := item.Value(func(b []byte) error {
+				newObj := r.cfg.NewFunc()
+				decodeObj, _, err := r.cfg.Codec.Decode(b, nil, newObj)
+				if err != nil {
+					return err
+				}
+				obj, ok := decodeObj.(T1)
+				if !ok {
+					return fmt.Errorf("unexpected object, got: %s", reflect.TypeOf(decodeObj).Name())
+				}
+				if visitorFunc != nil {
+					visitorFunc(ctx, key, obj)
+				}
+				return nil
+			}); err != nil {
 				return err
 			}
-			obj, ok := decodeObj.(T1)
-			if !ok {
-				return fmt.Errorf("unexpected object, got: %s", reflect.TypeOf(decodeObj).Name())
-			}
-			if visitorFunc != nil {
-				visitorFunc(ctx, key, obj)
-			}
-
 		}
 		return nil
 	})
@@ -176,39 +176,39 @@ func (r *badgerDB[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx con
 		for it.Seek(r.prefixKey); it.ValidForPrefix(r.prefixKey); it.Next() {
 			item := it.Item()
 			k := item.KeyCopy(nil)
-			b, err := item.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
 			key, err := r.decodeKey(k)
 			if err != nil {
 				return err
 			}
-
-			newObj := r.cfg.NewFunc()
-			decodeObj, _, err := r.cfg.Codec.Decode(b, nil, newObj)
-			if err != nil {
-				return err
-			}
-			obj, ok := decodeObj.(T1)
-			if !ok {
-				return fmt.Errorf("unexpected object, got: %s", reflect.TypeOf(decodeObj).Name())
-			}
-			if updateFunc != nil {
-				newObj := updateFunc(ctx, key, obj)
-				runtimeObj, err := convert(newObj)
+			if err := item.Value(func(b []byte) error {
+				newObj := r.cfg.NewFunc()
+				decodeObj, _, err := r.cfg.Codec.Decode(b, nil, newObj)
 				if err != nil {
 					return err
 				}
-
-				buf := new(bytes.Buffer)
-				if err := r.cfg.Codec.Encode(runtimeObj, buf); err != nil {
-					return err
+				obj, ok := decodeObj.(T1)
+				if !ok {
+					return fmt.Errorf("unexpected object, got: %s", reflect.TypeOf(decodeObj).Name())
 				}
+				if updateFunc != nil {
+					newObj := updateFunc(ctx, key, obj)
+					runtimeObj, err := convert(newObj)
+					if err != nil {
+						return err
+					}
 
-				if err := txn.Set(k, buf.Bytes()); err != nil {
-					return err
+					buf := new(bytes.Buffer)
+					if err := r.cfg.Codec.Encode(runtimeObj, buf); err != nil {
+						return err
+					}
+
+					if err := txn.Set(k, buf.Bytes()); err != nil {
+						return err
+					}
 				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 		return nil
