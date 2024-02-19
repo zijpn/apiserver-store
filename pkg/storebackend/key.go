@@ -23,7 +23,6 @@ import (
 )
 
 type Key struct {
-	//schema.GroupVersionKind
 	types.NamespacedName
 }
 

@@ -54,24 +54,31 @@ func (r *file[T1]) Get(ctx context.Context, key storebackend.Key) (T1, error) {
 	return r.readFile(ctx, key)
 }
 
-func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj T1)) {
+func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj T1)) error {
 	log := log.FromContext(ctx)
 
 	if err := r.visitDir(ctx, visitorFunc); err != nil {
 		log.Error("cannot list visiting dir failed", "error", err.Error())
+		return err
 	}
+	return nil
 }
 
-func (r *file[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) {
+func (r *file[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) error {
 	// not implemented
+	return nil
 }
 
-func (r *file[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) {
-	obj, _ := r.readFile(ctx, key)
+func (r *file[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) error {
+	obj, err:= r.readFile(ctx, key)
+	if err != nil {
+		return err
+	}
 	if updateFunc != nil {
 		obj = updateFunc(ctx, obj)
-		r.update(ctx, key, obj)
+		return r.update(ctx, key, obj)
 	}
+	return nil
 }
 
 func (r *file[T1]) Create(ctx context.Context, key storebackend.Key, data T1) error {

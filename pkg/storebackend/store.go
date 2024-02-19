@@ -29,7 +29,7 @@ type Storer[T1 any] interface {
 	Get(ctx context.Context, key Key) (T1, error)
 
 	// Retrieve retrieves data for the given key from the storage
-	List(ctx context.Context, visitorFunc func(context.Context, Key, T1))
+	List(ctx context.Context, visitorFunc func(context.Context, Key, T1)) error
 
 	// Create data with the given key in the storage
 	Create(ctx context.Context, key Key, data T1) error
@@ -38,10 +38,10 @@ type Storer[T1 any] interface {
 	Update(ctx context.Context, key Key, data T1) error
 
 	// Update data in a concurrent way through a function
-	UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key Key, obj T1) T1)
+	UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key Key, obj T1) T1) error
 
 	// Update data in a concurrent way through a function
-	UpdateWithKeyFn(ctx context.Context, key Key, updateFunc func(ctx context.Context, obj T1) T1)
+	UpdateWithKeyFn(ctx context.Context, key Key, updateFunc func(ctx context.Context, obj T1) T1) error
 
 	// Delete deletes data and key from the storage
 	Delete(ctx context.Context, key Key) error
