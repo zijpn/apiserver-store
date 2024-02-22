@@ -7,6 +7,8 @@ import (
 	"github.com/henderiw/logger/log"
 	"go.opentelemetry.io/otel/trace"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -18,6 +20,8 @@ func (r *Store) List(ctx context.Context, options *metainternalversion.ListOptio
 
 	log := log.FromContext(ctx)
 	log.Info("list")
+
+	logOptions(options)
 
 	/*
 		label := labels.Everything()
@@ -32,4 +36,36 @@ func (r *Store) List(ctx context.Context, options *metainternalversion.ListOptio
 	// TODO
 
 	return r.ListStrategy.List(ctx, options)
+}
+
+func logOptions(options *metainternalversion.ListOptions) {
+	logFieldSelectorOptions(options.FieldSelector)
+	logLabelsSelectorOptions(options.LabelSelector)
+
+}
+
+func logFieldSelectorOptions(selector fields.Selector) {
+	if selector == nil {
+		return
+	}
+
+	requirements := selector.Requirements()
+	for _, requirement := range requirements {
+		fmt.Println("requirement.Operator", requirement.Operator)
+		fmt.Println("requirement.Field", requirement.Field)
+		fmt.Println("requirement.Value", requirement.Value)
+	}
+}
+
+func logLabelsSelectorOptions(selector labels.Selector) {
+	if selector == nil {
+		return
+	}
+
+	requirements, _ := selector.Requirements()
+	for _, requirement := range requirements {
+		fmt.Println("requirement.Operator", requirement.Operator())
+		fmt.Println("requirement.Field", requirement.Key())
+		fmt.Println("requirement.Value", requirement.Values())
+	}
 }
