@@ -31,16 +31,13 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("deleteCollection", "listoptions", listOptions, "deleteOptions", options)
+	log.Info("deleteCollection")
 
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
 	} else {
 		listOptions = listOptions.DeepCopy()
 	}
-
-	logOptions(ctx, listOptions)
-
 	var items []runtime.Object
 
 	// TODO(wojtek-t): Decide if we don't want to start workers more opportunistically.
