@@ -19,7 +19,7 @@ func (r *Store) List(ctx context.Context, options *metainternalversion.ListOptio
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("list")
+	log.Info("list", "listOptions", options)
 
 	logOptions(ctx, options)
 
