@@ -21,7 +21,7 @@ func (r *Store) List(ctx context.Context, options *metainternalversion.ListOptio
 	log := log.FromContext(ctx)
 	log.Info("list")
 
-	logOptions(options)
+	logOptions(ctx, options)
 
 	/*
 		label := labels.Everything()
@@ -38,34 +38,34 @@ func (r *Store) List(ctx context.Context, options *metainternalversion.ListOptio
 	return r.ListStrategy.List(ctx, options)
 }
 
-func logOptions(options *metainternalversion.ListOptions) {
-	logFieldSelectorOptions(options.FieldSelector)
-	logLabelsSelectorOptions(options.LabelSelector)
+func logOptions(ctx context.Context, options *metainternalversion.ListOptions) {
+	logFieldSelectorOptions(ctx, options.FieldSelector)
+	logLabelsSelectorOptions(ctx, options.LabelSelector)
 
 }
 
-func logFieldSelectorOptions(selector fields.Selector) {
+func logFieldSelectorOptions(ctx context.Context, selector fields.Selector) {
+	log := log.FromContext(ctx)
 	if selector == nil {
+		log.Info("field requirement nil")
 		return
 	}
 
 	requirements := selector.Requirements()
 	for _, requirement := range requirements {
-		fmt.Println("requirement.Operator", requirement.Operator)
-		fmt.Println("requirement.Field", requirement.Field)
-		fmt.Println("requirement.Value", requirement.Value)
+		log.Info("field requirement", "operator", requirement.Operator, "field", requirement.Field, "value", requirement.Value)
 	}
 }
 
-func logLabelsSelectorOptions(selector labels.Selector) {
+func logLabelsSelectorOptions(ctx context.Context, selector labels.Selector) {
+	log := log.FromContext(ctx)
 	if selector == nil {
+		log.Info("label requirement nil")
 		return
 	}
 
 	requirements, _ := selector.Requirements()
 	for _, requirement := range requirements {
-		fmt.Println("requirement.Operator", requirement.Operator())
-		fmt.Println("requirement.Field", requirement.Key())
-		fmt.Println("requirement.Value", requirement.Values())
+		log.Info("label requirement", "operator", requirement.Operator(), "key", requirement.Key(), "values", requirement.Values())
 	}
 }

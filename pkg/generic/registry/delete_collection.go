@@ -39,6 +39,8 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 		listOptions = listOptions.DeepCopy()
 	}
 
+	logOptions(ctx, listOptions)
+
 	var items []runtime.Object
 
 	// TODO(wojtek-t): Decide if we don't want to start workers more opportunistically.
