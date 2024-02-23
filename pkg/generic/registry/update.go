@@ -91,7 +91,8 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		return nil, false, apierrors.NewConflict(r.DefaultQualifiedResource, oldaccessor.GetName(), fmt.Errorf(OptimisticLockErrorMsg))
 	}
 	if oldaccessor.GetDeletionTimestamp() != nil && len(newaccessor.GetFinalizers()) == 0 {
-		if err := r.DeleteStrategy.Delete(ctx, key, obj, isDryRun(options.DryRun)); err != nil {
+		obj, err := r.DeleteStrategy.Delete(ctx, key, obj, isDryRun(options.DryRun))
+		if err != nil {
 			return nil, false, apierrors.NewInternalError(err)
 		}
 		// deleted
