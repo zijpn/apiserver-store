@@ -91,14 +91,14 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		return nil, false, apierrors.NewConflict(r.DefaultQualifiedResource, oldaccessor.GetName(), fmt.Errorf(OptimisticLockErrorMsg))
 	}
 	if oldaccessor.GetDeletionTimestamp() != nil && len(newaccessor.GetFinalizers()) == 0 {
-		if err := r.DeleteStrategy.Delete(ctx, key, obj); err != nil {
+		if err := r.DeleteStrategy.Delete(ctx, key, obj, isDryRun(options.DryRun)); err != nil {
 			return nil, false, apierrors.NewInternalError(err)
 		}
 		// deleted
 		return obj, false, nil
 	}
 
-	obj, err = r.UpdateStrategy.Update(ctx, key, obj, existing)
+	obj, err = r.UpdateStrategy.Update(ctx, key, obj, existing, isDryRun(options.DryRun))
 	if err != nil {
 		// TODO see if we need to return more errors
 		return obj, creating, apierrors.NewInternalError(err)

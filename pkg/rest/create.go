@@ -81,7 +81,7 @@ type RESTCreateStrategy interface {
 	// empty method.
 	Canonicalize(obj runtime.Object)
 
-	Create(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
+	Create(ctx context.Context, key types.NamespacedName, obj runtime.Object, dryrun bool) error
 }
 
 // BeforeCreate ensures that common operations for all resources are performed on creation. It only returns

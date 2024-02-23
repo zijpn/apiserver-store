@@ -83,7 +83,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 		return out, false, err
 	}
 
-	if derr := r.DeleteStrategy.Delete(ctx, key, obj); derr != nil {
+	if derr := r.DeleteStrategy.Delete(ctx, key, obj, isDryRun(options.DryRun)); derr != nil {
 		obj, err = r.finalizeDelete(ctx, obj, true, options)
 		return obj, false, apierrors.NewInternalError(errors.Join(derr, err))
 	}
@@ -305,7 +305,7 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name
 			if err != nil {
 				return false, obj, err
 			}
-			obj, err := r.UpdateStrategy.Update(ctx, key, obj, old)
+			obj, err := r.UpdateStrategy.Update(ctx, key, obj, old, isDryRun(options.DryRun))
 			if err != nil {
 				return false, obj, err
 			}
@@ -327,7 +327,7 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name
 		// we should fall through and truly delete the object.
 		return true, obj, nil
 	}
-	obj, err = r.UpdateStrategy.Update(ctx, key, obj, old)
+	obj, err = r.UpdateStrategy.Update(ctx, key, obj, old, isDryRun(options.DryRun))
 	if err != nil {
 		return false, obj, err
 	}

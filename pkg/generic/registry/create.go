@@ -55,7 +55,7 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		return nil, err
 	}
 	//qualifiedResource := r.qualifiedResourceFromContext(ctx)
-	if err := r.CreateStrategy.Create(ctx, key, obj); err != nil {
+	if err := r.CreateStrategy.Create(ctx, key, obj, isDryRun(options.DryRun)); err != nil {
 		// TODO see if we need to return more errors
 		return nil, apierrors.NewInternalError(err)
 	}
