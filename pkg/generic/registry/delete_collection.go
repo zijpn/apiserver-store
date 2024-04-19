@@ -77,7 +77,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 				// when making a single call.  When making multiple calls via delete collection, the mutation applied to
 				// pod/A can change the option ultimately used for pod/B.
 				if _, _, err := r.Delete(ctx, accessor.GetName(), deleteValidation, options.DeepCopy()); err != nil && !apierrors.IsNotFound(err) {
-					log.Info("Delete object in DeleteCollection failed", "object", accessor.GetName(), "err", err)
+					log.Error("Delete object in DeleteCollection failed", "object", accessor.GetName(), "err", err)
 					errs <- err
 					return
 				}
@@ -126,7 +126,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 				select {
 				case toProcess <- newItems[i]:
 				case <-workersExited:
-					log.Info("workers already exited, and there are some items waiting to be processed", "queued/finished", i, "total", processedItems+len(newItems))
+					log.Debug("workers already exited, and there are some items waiting to be processed", "queued/finished", i, "total", processedItems+len(newItems))
 					// Try to propagate an error from the workers if possible.
 					select {
 					case err := <-errs:

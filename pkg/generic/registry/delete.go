@@ -301,7 +301,7 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, _ st
 	if !graceful {
 		// set the DeleteGracePeriods to 0 if the object has pendingFinalizers but not supporting graceful deletion
 		if pendingFinalizers {
-			log.Info("Object has pending finalizers, so the registry is going to update its status to deleting", "object", existingAccessor.GetName())
+			log.Debug("Object has pending finalizers, so the registry is going to update its status to deleting", "object", existingAccessor.GetName())
 			err = markAsDeleting(obj, time.Now())
 			if err != nil {
 				return false, obj, err
