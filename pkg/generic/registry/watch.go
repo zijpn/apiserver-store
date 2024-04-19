@@ -15,7 +15,7 @@ func (r *Store) Watch(ctx context.Context, options *metainternalversion.ListOpti
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("watch")
+	log.Debug("watch")
 
 	if err := r.WatchStrategy.BeginWatch(ctx); err != nil {
 		return nil, err

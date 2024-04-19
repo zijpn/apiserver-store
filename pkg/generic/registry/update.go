@@ -26,7 +26,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("update")
+	log.Debug("update")
 
 	if err := r.UpdateStrategy.BeginUpdate(ctx); err != nil {
 		return nil, false, err

@@ -15,7 +15,7 @@ func (r *Store) Get(ctx context.Context, name string, options *metav1.GetOptions
 	defer span.End()
 
 	log := log.FromContext(ctx).With("name", name)
-	log.Info("get")
+	log.Debug("get")
 
 	key, err := r.KeyFunc(ctx, name)
 	if err != nil {

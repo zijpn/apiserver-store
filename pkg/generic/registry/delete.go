@@ -27,7 +27,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	defer span.End()
 
 	log := log.FromContext(ctx).With("name", name)
-	log.Info("delete")
+	log.Debug("delete")
 
 	if err := r.DeleteStrategy.BeginDelete(ctx); err != nil {
 		return nil, false, err
@@ -104,7 +104,7 @@ func (r *Store) qualifiedResourceFromContext(ctx context.Context) schema.GroupRe
 
 // finalizeDelete runs the Store's AfterDelete hook if runHooks is set and
 // returns the decorated deleted object if appropriate.
-func (r *Store) finalizeDelete(ctx context.Context, obj runtime.Object, runHooks bool, options *metav1.DeleteOptions) (runtime.Object, error) {
+func (r *Store) finalizeDelete(ctx context.Context, obj runtime.Object, _ bool, _ *metav1.DeleteOptions) (runtime.Object, error) {
 	if r.ReturnDeletedObject {
 		return obj, nil
 	}
@@ -264,7 +264,7 @@ func shouldDeleteDependents(ctx context.Context, e *Store, accessor metav1.Objec
 //  2. a new output object with the state that was updated
 //  3. a copy of the last existing state of the object
 //  4. an error
-func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, name string, key types.NamespacedName, options *metav1.DeleteOptions, preconditions storage.Preconditions, deleteValidation rest.ValidateObjectFunc, obj runtime.Object) (deleteImmediately bool, out runtime.Object, err error) {
+func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, _ string, key types.NamespacedName, options *metav1.DeleteOptions, _ storage.Preconditions, deleteValidation rest.ValidateObjectFunc, obj runtime.Object) (deleteImmediately bool, out runtime.Object, err error) {
 	log := log.FromContext(ctx)
 	lastGraceful := int64(0)
 	var pendingFinalizers bool

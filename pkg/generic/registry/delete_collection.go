@@ -31,7 +31,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("deleteCollection")
+	log.Debug("deleteCollection")
 
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
