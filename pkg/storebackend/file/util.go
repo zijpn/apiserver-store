@@ -86,7 +86,7 @@ func (r *file[T1]) writeFile(ctx context.Context, key storebackend.Key, obj T1) 
 	return os.WriteFile(r.filename(key), buf.Bytes(), 0644)
 }
 
-func (r *file[T1]) deleteFile(ctx context.Context, key storebackend.Key) error {
+func (r *file[T1]) deleteFile(_ context.Context, key storebackend.Key) error {
 	return os.Remove(r.filename(key))
 }
 

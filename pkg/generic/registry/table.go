@@ -9,24 +9,39 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apiserver/pkg/registry/rest"
 )
 
-type TableConvertor struct {
-	Resource schema.GroupResource
+type TableConvertorCellFn func(obj runtime.Object) []interface{}
+
+func NewTableConverter(
+	resource schema.GroupResource,
+	cells TableConvertorCellFn,
+	columns []metav1.TableColumnDefinition,
+) rest.TableConvertor {
+	return &tableConvertor{
+		resource: resource,
+		cells:    cells,
+		columns:  columns,
+	}
+}
+
+type tableConvertor struct {
+	resource schema.GroupResource
 	// cells creates a single row of cells of the table from a runtime.Object
-	Cells func(obj runtime.Object) []interface{}
+	cells func(obj runtime.Object) []interface{}
 	// columns stores column definitions for the table convertor
-	Columns []metav1.TableColumnDefinition
+	columns []metav1.TableColumnDefinition
 }
 
 // ConvertToTable implements rest.TableConvertor
-func (r TableConvertor) ConvertToTable(ctx context.Context, object runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
+func (r *tableConvertor) ConvertToTable(ctx context.Context, object runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
 	var table metav1.Table
 
 	fn := func(obj runtime.Object) error {
-		cells := r.Cells(obj)
+		cells := r.cells(obj)
 		if len(cells) == 0 {
-			return errNotAcceptable{resource: r.Resource}
+			return errNotAcceptable{resource: r.resource}
 		}
 		table.Rows = append(table.Rows, metav1.TableRow{
 			Cells:  cells,
@@ -59,7 +74,7 @@ func (r TableConvertor) ConvertToTable(ctx context.Context, object runtime.Objec
 		//table.SelfLink = c.GetSelfLink()
 	}
 	if opt, ok := tableOptions.(*metav1.TableOptions); !ok || !opt.NoHeaders {
-		table.ColumnDefinitions = r.Columns
+		table.ColumnDefinitions = r.columns
 	}
 
 	return &table, nil
