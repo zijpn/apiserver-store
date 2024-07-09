@@ -264,6 +264,7 @@ func shouldDeleteDependents(ctx context.Context, e *Store, accessor metav1.Objec
 //  2. a new output object with the state that was updated
 //  3. a copy of the last existing state of the object
 //  4. an error
+// graceful period is only useful for pods
 func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, _ string, key types.NamespacedName, options *metav1.DeleteOptions, _ storage.Preconditions, deleteValidation rest.ValidateObjectFunc, obj runtime.Object) (deleteImmediately bool, out runtime.Object, err error) {
 	log := log.FromContext(ctx)
 	lastGraceful := int64(0)

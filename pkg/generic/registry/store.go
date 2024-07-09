@@ -14,15 +14,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
+	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
 
 var _ rest.StandardStorage = &Store{}
 var _ rest.TableConvertor = &Store{}
 var _ rest.SingularNameProvider = &Store{}
+var _ rest.ShortNamesProvider = &Store{}
+var _ rest.CategoriesProvider = &Store{}
+var _ rest.ResetFieldsStrategy = &Store{}
 
 type Store struct {
 	Tracer trace.Tracer
@@ -97,10 +100,18 @@ type Store struct {
 	// of items into tabular output. If unset, the default will be used.
 	TableConvertor rest.TableConvertor
 
+	// ResetFieldsStrategy provides the fields reset by the strategy that
+	// should not be modified by the user.
+	ResetFieldsStrategy rest.ResetFieldsStrategy
+
 	// DestroyFunc cleans up clients used by the underlying Storage; optional.
 	// If set, DestroyFunc has to be implemented in thread-safe way and
 	// be prepared for being called more than once.
 	DestroyFunc func()
+
+	ShortNameList []string
+
+	CategoryList []string
 }
 
 // CompleteWithOptions updates the store with the provided options and
@@ -252,4 +263,20 @@ func (r *Store) ConvertToTable(ctx context.Context, object runtime.Object, table
 		return r.TableConvertor.ConvertToTable(ctx, object, tableOptions)
 	}
 	return rest.NewDefaultTableConvertor(r.DefaultQualifiedResource).ConvertToTable(ctx, object, tableOptions)
+}
+
+func (r *Store) Categories() []string {
+	return r.CategoryList
+}
+
+func (r *Store) ShortNames() []string {
+	return r.ShortNameList
+}
+
+// GetResetFields implements rest.ResetFieldsStrategy
+func (e *Store) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+	if e.ResetFieldsStrategy == nil {
+		return nil
+	}
+	return e.ResetFieldsStrategy.GetResetFields()
 }
