@@ -27,7 +27,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	defer span.End()
 
 	log := log.FromContext(ctx).With("name", name)
-	log.Debug("delete")
+	log.Info("delete")
 
 	if err := r.DeleteStrategy.BeginDelete(ctx); err != nil {
 		return nil, false, err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 	"github.com/henderiw/logger/log"
 	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -11,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
-	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 )
 
 func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
@@ -36,6 +36,9 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		objectMeta.SetResourceVersion("0")
 	}
 
+	// BeforeCreate ensures that common operations for all resources are performed on creation. It only returns
+	// errors that can be converted to api.Status. It invokes PrepareForCreate, then Validate.
+	// It returns nil if the object should be created.
 	if err := reststore.BeforeCreate(r.CreateStrategy, ctx, obj); err != nil {
 		return nil, err
 	}
@@ -61,6 +64,6 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		return nil, apierrors.NewInternalError(err)
 	}
 
-	// The operation has succeeded. 
+	// The operation has succeeded.
 	return obj, nil
 }
