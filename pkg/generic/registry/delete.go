@@ -39,10 +39,14 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	}
 	qualifiedResource := r.qualifiedResourceFromContext(ctx)
 
+	log.Info("delete", "key", key)
+
 	obj, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
 		return nil, false, apierrors.NewNotFound(qualifiedResource, name)
 	}
+
+	log.Info("delete after get", "obj", obj)
 
 	// support older consumers of delete by treating "nil" as delete immediately
 	if options == nil {
@@ -57,6 +61,8 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	if err != nil {
 		return nil, false, err
 	}
+
+	log.Info("delete", "graceful", graceful, "pendingGraceful", pendingGraceful)
 	// this means finalizers cannot be updated via DeleteOptions if a deletion is already pending
 	if pendingGraceful {
 		out, err := r.finalizeDelete(ctx, obj, false, options)
@@ -71,6 +77,8 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	var deleteImmediately bool = true
 	var out runtime.Object
 
+	log.Info("delete", "pendingFinalizers", pendingFinalizers)
+
 	// Handle combinations of graceful deletion and finalization by issuing
 	// the correct updates.
 	shouldUpdateFinalizers, _ := deletionFinalizersForGarbageCollection(ctx, r, accessor, options)
@@ -78,6 +86,8 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	if graceful || pendingFinalizers || shouldUpdateFinalizers {
 		deleteImmediately, out, err = r.updateForGracefulDeletionAndFinalizers(ctx, name, key, options, preconditions, deleteValidation, obj)
 	}
+
+	log.Info("delete", "deleteImmediately", deleteImmediately, "error", err)
 	// !deleteImmediately covers all cases where err != nil. We keep both to be future-proof.
 	if !deleteImmediately || err != nil {
 		return out, false, err
