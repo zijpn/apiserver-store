@@ -27,7 +27,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	defer span.End()
 
 	log := log.FromContext(ctx).With("name", name)
-	log.Info("delete")
+	log.Debug("delete")
 
 	if err := r.DeleteStrategy.BeginDelete(ctx); err != nil {
 		return nil, false, err
@@ -39,14 +39,14 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	}
 	qualifiedResource := r.qualifiedResourceFromContext(ctx)
 
-	log.Info("delete", "key", key)
+	log.Debug("delete", "key", key)
 
 	obj, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
 		return nil, false, apierrors.NewNotFound(qualifiedResource, name)
 	}
 
-	log.Info("delete after get", "obj", obj)
+	log.Debug("delete after get", "obj", obj)
 
 	// support older consumers of delete by treating "nil" as delete immediately
 	if options == nil {
@@ -62,7 +62,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 		return nil, false, err
 	}
 
-	log.Info("delete", "graceful", graceful, "pendingGraceful", pendingGraceful)
+	log.Debug("delete", "graceful", graceful, "pendingGraceful", pendingGraceful)
 	// this means finalizers cannot be updated via DeleteOptions if a deletion is already pending
 	if pendingGraceful {
 		out, err := r.finalizeDelete(ctx, obj, false, options)
@@ -77,7 +77,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	var deleteImmediately bool = true
 	var out runtime.Object
 
-	log.Info("delete", "pendingFinalizers", pendingFinalizers)
+	log.Debug("delete", "pendingFinalizers", pendingFinalizers)
 
 	// Handle combinations of graceful deletion and finalization by issuing
 	// the correct updates.
@@ -87,7 +87,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 		deleteImmediately, out, err = r.updateForGracefulDeletionAndFinalizers(ctx, name, key, options, preconditions, deleteValidation, obj)
 	}
 
-	log.Info("delete", "deleteImmediately", deleteImmediately, "error", err)
+	log.Debug("delete", "deleteImmediately", deleteImmediately, "error", err)
 	// !deleteImmediately covers all cases where err != nil. We keep both to be future-proof.
 	if !deleteImmediately || err != nil {
 		return out, false, err

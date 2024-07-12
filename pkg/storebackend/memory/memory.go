@@ -125,13 +125,13 @@ func (r *mem[T1]) Update(ctx context.Context, key storebackend.Key, data T1) err
 	return nil
 }
 
-func (r *mem[T1]) update(ctx context.Context, key storebackend.Key, newd T1) {
+func (r *mem[T1]) update(_ context.Context, key storebackend.Key, newd T1) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	r.db[key] = newd
 }
 
-func (r *mem[T1]) delete(ctx context.Context, key storebackend.Key) {
+func (r *mem[T1]) delete(_ context.Context, key storebackend.Key) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	delete(r.db, key)
