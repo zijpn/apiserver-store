@@ -19,7 +19,7 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Debug("create")
+	log.Info("create")
 
 	if err := r.CreateStrategy.BeginCreate(ctx); err != nil {
 		return nil, err

@@ -26,7 +26,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Debug("update")
+	log.Info("update", "name", name, "objInfo", objInfo, "forceAllowCreate", forceAllowCreate, "options", options)
 
 	if err := r.UpdateStrategy.BeginUpdate(ctx); err != nil {
 		return nil, false, err
@@ -41,6 +41,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 
 	existing, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
+		log.Info("update allowcreate", "allow create", r.UpdateStrategy.AllowCreateOnUpdate(), "forceAllowCreate", forceAllowCreate)
 		if !r.UpdateStrategy.AllowCreateOnUpdate() && !forceAllowCreate {
 			return nil, creating, apierrors.NewNotFound(qualifiedResource, name)
 		}
