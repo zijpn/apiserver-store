@@ -39,7 +39,7 @@ var (
 	separator           = []byte("/")
 )
 
-func NewStore[T1 any](db *badger.DB, cfg *storebackend.Config[T1]) (storebackend.Storer[T1], error) {
+func NewStore[T1 any](db *badger.DB, cfg *storebackend.Config) (storebackend.Storer[T1], error) {
 
 	r := &badgerDB[T1]{
 		cfg:       cfg,
@@ -52,7 +52,7 @@ func NewStore[T1 any](db *badger.DB, cfg *storebackend.Config[T1]) (storebackend
 type badgerDB[T1 any] struct {
 	prefixKey []byte
 	db        *badger.DB
-	cfg       *storebackend.Config[T1]
+	cfg       *storebackend.Config
 }
 
 // Retrieve retrieves data for the given key from the storage

@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package file
+package fileu
 
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"github.com/henderiw/logger/log"
@@ -31,30 +30,35 @@ const (
 	NotFound = "not found"
 )
 
-func NewStore[T1 any](cfg *storebackend.Config) (storebackend.Storer[T1], error) {
-	objRootPath := filepath.Join(cfg.Prefix, cfg.GroupResource.Group, cfg.GroupResource.Resource)
-	if err := ensureDir(objRootPath); err != nil {
+func NewStore(cfg *storebackend.Config) (storebackend.UnstructuredStorer, error) {
+	if err := ensureDir(cfg.Prefix); err != nil {
 		return nil, fmt.Errorf("unable to write data dir: %s", err)
 	}
-	return &file[T1]{
-		objRootPath: objRootPath,
+	return &file{
+		grPrefix:    fmt.Sprintf("%s_%s", cfg.GroupResource.Group, cfg.GroupResource.Resource),
+		group:       cfg.GroupResource.Group,
+		resource:    cfg.GroupResource.Resource,
+		objRootPath: cfg.Prefix,
 		codec:       cfg.Codec,
 		newFunc:     cfg.NewFunc,
 	}, nil
 }
 
-type file[T1 any] struct {
+type file struct {
+	grPrefix    string
+	group       string
+	resource    string
 	objRootPath string
 	codec       runtime.Codec
 	newFunc     func() runtime.Object
 }
 
 // Get return the type
-func (r *file[T1]) Get(ctx context.Context, key storebackend.Key) (T1, error) {
+func (r *file) Get(ctx context.Context, key storebackend.Key) (runtime.Unstructured, error) {
 	return r.readFile(ctx, key)
 }
 
-func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj T1)) error {
+func (r *file) List(ctx context.Context, visitorFunc func(ctx context.Context, key storebackend.Key, obj runtime.Unstructured)) error {
 	log := log.FromContext(ctx)
 
 	if err := r.visitDir(ctx, visitorFunc); err != nil {
@@ -64,13 +68,13 @@ func (r *file[T1]) List(ctx context.Context, visitorFunc func(ctx context.Contex
 	return nil
 }
 
-func (r *file[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj T1) T1) error {
+func (r *file) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key storebackend.Key, obj runtime.Unstructured) runtime.Unstructured) error {
 	// not implemented
 	return nil
 }
 
-func (r *file[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) error {
-	obj, err:= r.readFile(ctx, key)
+func (r *file) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj runtime.Unstructured) runtime.Unstructured) error {
+	obj, err := r.readFile(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -81,7 +85,7 @@ func (r *file[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, up
 	return nil
 }
 
-func (r *file[T1]) Create(ctx context.Context, key storebackend.Key, data T1) error {
+func (r *file) Create(ctx context.Context, key storebackend.Key, data runtime.Unstructured) error {
 	// if an error is returned the entry already exists
 	if _, err := r.Get(ctx, key); err == nil {
 		return fmt.Errorf("duplicate entry %v", key.String())
@@ -96,15 +100,7 @@ func (r *file[T1]) Create(ctx context.Context, key storebackend.Key, data T1) er
 }
 
 // Upsert creates or updates the entry in the cache
-func (r *file[T1]) Update(ctx context.Context, key storebackend.Key, data T1) error {
-	/*
-		exists := true
-		oldd, err := r.Get(ctx, key)
-		if err != nil {
-			exists = false
-		}
-	*/
-
+func (r *file) Update(ctx context.Context, key storebackend.Key, data runtime.Unstructured) error {
 	// update the cache before calling the callback since the cb fn will use this data
 	if err := r.update(ctx, key, data); err != nil {
 		return err
@@ -123,16 +119,16 @@ func (r *file[T1]) Update(ctx context.Context, key storebackend.Key, data T1) er
 	return nil
 }
 
-func (r *file[T1]) update(ctx context.Context, key storebackend.Key, newd T1) error {
+func (r *file) update(ctx context.Context, key storebackend.Key, newd runtime.Unstructured) error {
 	return r.writeFile(ctx, key, newd)
 }
 
-func (r *file[T1]) delete(ctx context.Context, key storebackend.Key) error {
+func (r *file) delete(ctx context.Context, key storebackend.Key) error {
 	return r.deleteFile(ctx, key)
 }
 
 // Delete deletes the entry in the cache
-func (r *file[T1]) Delete(ctx context.Context, key storebackend.Key) error {
+func (r *file) Delete(ctx context.Context, key storebackend.Key) error {
 	// only if an exisitng object gets deleted we
 	// call the registered callbacks
 	//exists := true

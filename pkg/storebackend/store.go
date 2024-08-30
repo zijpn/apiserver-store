@@ -50,9 +50,37 @@ type Storer[T1 any] interface {
 	//Watch(ctx context.Context) (watch.Interface[T1], error)
 }
 
-type Config[T1 any] struct {
+type Config struct {
 	GroupResource schema.GroupResource
 	Prefix        string
 	Codec         runtime.Codec
 	NewFunc       func() runtime.Object
+}
+
+
+// Storer defines the interface for a generic storage system.
+type UnstructuredStorer interface {
+	// Retrieve retrieves data for the given key from the storage
+	Get(ctx context.Context, key Key) (runtime.Unstructured, error)
+
+	// Retrieve retrieves data for the given key from the storage
+	List(ctx context.Context, visitorFunc func(context.Context, Key, runtime.Unstructured)) error
+
+	// Create data with the given key in the storage
+	Create(ctx context.Context, key Key, data runtime.Unstructured) error
+
+	// Update data with the given key in the storage
+	Update(ctx context.Context, key Key, data runtime.Unstructured) error
+
+	// Update data in a concurrent way through a function
+	UpdateWithFn(ctx context.Context, updateFunc func(ctx context.Context, key Key, obj runtime.Unstructured) runtime.Unstructured) error
+
+	// Update data in a concurrent way through a function
+	UpdateWithKeyFn(ctx context.Context, key Key, updateFunc func(ctx context.Context, obj runtime.Unstructured) runtime.Unstructured) error
+
+	// Delete deletes data and key from the storage
+	Delete(ctx context.Context, key Key) error
+
+	// Watch watches change
+	//Watch(ctx context.Context) (watch.Interface[T1], error)
 }
