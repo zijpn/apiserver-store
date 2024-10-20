@@ -84,7 +84,7 @@ func (r *file) visitDir(ctx context.Context, visitorFunc func(ctx context.Contex
 		if !strings.HasPrefix(info.Name(), r.grPrefix) {
 			return nil
 		}
-		// this is a json file by now
+		// this is a yaml file by now
 		// next step is find the key (namespace and name)
 		name := filepath.Base(path)
 		name = strings.TrimSuffix(name, ".yaml")
