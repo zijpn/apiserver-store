@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	golang.org/x/sync v0.8.0
-	k8s.io/apimachinery v0.32.0-alpha.2
-	k8s.io/apiserver v0.32.0-alpha.2
+	k8s.io/apimachinery v0.31.0
+	k8s.io/apiserver v0.31.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -84,9 +84,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.32.0-alpha.2 // indirect
-	k8s.io/client-go v0.32.0-alpha.2 // indirect
-	k8s.io/component-base v0.32.0-alpha.2 // indirect
+	k8s.io/api v0.31.0 // indirect
+	k8s.io/client-go v0.31.0 // indirect
+	k8s.io/component-base v0.31.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240827152857-f7e401e7b4c2 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
