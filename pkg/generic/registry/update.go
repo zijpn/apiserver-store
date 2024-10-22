@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
@@ -26,7 +27,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("update", "name", name, "objInfo", objInfo, "forceAllowCreate", forceAllowCreate, "options", options)
+	log.Debug("update", "name", name, "objInfo", objInfo, "forceAllowCreate", forceAllowCreate, "options", options)
 
 	if err := r.UpdateStrategy.BeginUpdate(ctx); err != nil {
 		return nil, false, err
@@ -41,7 +42,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 
 	existing, err := r.GetStrategy.Get(ctx, key)
 	if err != nil {
-		log.Info("update allowcreate", "allow create", r.UpdateStrategy.AllowCreateOnUpdate(), "forceAllowCreate", forceAllowCreate)
+		log.Debug("update allowcreate", "allow create", r.UpdateStrategy.AllowCreateOnUpdate(), "forceAllowCreate", forceAllowCreate)
 		if !r.UpdateStrategy.AllowCreateOnUpdate() && !forceAllowCreate {
 			return nil, creating, apierrors.NewNotFound(qualifiedResource, name)
 		}
@@ -89,7 +90,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	}
 
 	if newaccessor.GetResourceVersion() != oldaccessor.GetResourceVersion() {
-		return nil, false, apierrors.NewConflict(r.DefaultQualifiedResource, oldaccessor.GetName(), fmt.Errorf(OptimisticLockErrorMsg))
+		return nil, false, apierrors.NewConflict(r.DefaultQualifiedResource, oldaccessor.GetName(), errors.New(OptimisticLockErrorMsg))
 	}
 	if oldaccessor.GetDeletionTimestamp() != nil && len(newaccessor.GetFinalizers()) == 0 {
 		obj, err := r.DeleteStrategy.Delete(ctx, key, obj, isDryRun(options.DryRun))
@@ -98,6 +99,10 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		}
 		// deleted
 		return obj, false, nil
+	}
+
+	if err := r.UpdateStrategy.InvokeUpdate(ctx, obj, existing); err != nil {
+		return nil, creating, err
 	}
 
 	obj, err = r.UpdateStrategy.Update(ctx, key, obj, existing, isDryRun(options.DryRun))

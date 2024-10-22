@@ -19,7 +19,7 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Info("create")
+	log.Debug("create")
 
 	if err := r.CreateStrategy.BeginCreate(ctx); err != nil {
 		return nil, err
@@ -49,6 +49,11 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 			return nil, err
 		}
 	}
+
+	if err := r.CreateStrategy.InvokeCreate(ctx, obj); err != nil {
+		return nil, err
+	}
+
 	name, err := r.ObjectNameFunc(obj)
 	if err != nil {
 		return nil, err

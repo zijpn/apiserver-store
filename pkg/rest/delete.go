@@ -15,5 +15,8 @@ type RESTDeleteStrategy interface {
 	// BeginDelete is an optional hook that can be used to indicate the method is supported
 	BeginDelete(ctx context.Context) error
 
+	// called when async procedure is implemented by the storage layer
+	InvokeDelete(ctx context.Context, obj runtime.Object) error
+
 	Delete(ctx context.Context, key types.NamespacedName, obj runtime.Object, dryrun bool) (runtime.Object, error)
 }
