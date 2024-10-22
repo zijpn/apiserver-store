@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/henderiw/logger/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	genericvalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -53,6 +54,8 @@ type RESTCreateStrategy interface {
 	// before the object is persisted.  This method should not mutate the
 	// object.
 	Validate(ctx context.Context, obj runtime.Object) field.ErrorList
+	// called when async procedure is implemented by the storage layer
+	InvokeCreate(ctx context.Context, obj runtime.Object) error
 	// WarningsOnCreate returns warnings to the client performing a create.
 	// WarningsOnCreate is invoked after default fields in the object have been filled in
 	// and after Validate has passed, before Canonicalize is called, and the object is persisted.
@@ -88,6 +91,8 @@ type RESTCreateStrategy interface {
 // errors that can be converted to api.Status. It invokes PrepareForCreate, then Validate.
 // It returns nil if the object should be created.
 func BeforeCreate(strategy RESTCreateStrategy, ctx context.Context, obj runtime.Object) error {
+	log := log.FromContext(ctx)
+	log.Debug("beforecreate", "obj", obj)
 	objectMeta, kind, kerr := objectMetaAndKind(strategy, obj)
 	if kerr != nil {
 		return kerr

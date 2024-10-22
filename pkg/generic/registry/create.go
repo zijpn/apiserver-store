@@ -49,6 +49,11 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 			return nil, err
 		}
 	}
+
+	if err := r.CreateStrategy.InvokeCreate(ctx, obj); err != nil {
+		return nil, err
+	}
+
 	name, err := r.ObjectNameFunc(obj)
 	if err != nil {
 		return nil, err
