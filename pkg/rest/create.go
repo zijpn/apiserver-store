@@ -55,7 +55,7 @@ type RESTCreateStrategy interface {
 	// object.
 	Validate(ctx context.Context, obj runtime.Object) field.ErrorList
 	// called when async procedure is implemented by the storage layer
-	InvokeCreate(ctx context.Context, obj runtime.Object) error
+	InvokeCreate(ctx context.Context, obj runtime.Object, recusrion bool) error
 	// WarningsOnCreate returns warnings to the client performing a create.
 	// WarningsOnCreate is invoked after default fields in the object have been filled in
 	// and after Validate has passed, before Canonicalize is called, and the object is persisted.
