@@ -51,6 +51,7 @@ func (r *Store) Delete(ctx context.Context, name string, deleteValidation rest.V
 	recursion := false
 	if len(options.DryRun) == 1 && options.DryRun[0] == "recursion" {
 		recursion = true
+		options.DryRun = []string{}
 	}
 	if err := r.DeleteStrategy.InvokeDelete(ctx, obj, recursion); err != nil {
 		return nil, false, err
