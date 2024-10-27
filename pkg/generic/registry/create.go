@@ -52,6 +52,7 @@ func (r *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 	recursion := false
 	if len(options.DryRun) == 1 && options.DryRun[0] == "recursion" {
 		recursion = true
+		options.DryRun = []string{}
 	}
 
 	if err := r.CreateStrategy.InvokeCreate(ctx, obj, recursion); err != nil {

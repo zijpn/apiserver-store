@@ -104,6 +104,7 @@ func (r *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	recursion := false
 	if len(options.DryRun) == 1 && options.DryRun[0] == "recursion" {
 		recursion = true
+		options.DryRun = []string{}
 	}
 	if err := r.UpdateStrategy.InvokeUpdate(ctx, obj, existing, recursion); err != nil {
 		return nil, creating, err
