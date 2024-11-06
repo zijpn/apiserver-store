@@ -38,7 +38,7 @@ type RESTUpdateStrategy interface {
 	// the object.
 	ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList
 	// called when async procedure is implemented by the storage layer
-	InvokeUpdate(ctx context.Context, obj runtime.Object, recusrion bool) (runtime.Object, error)
+	InvokeUpdate(ctx context.Context, obj, old runtime.Object, recusrion bool) (runtime.Object, runtime.Object, error)
 	// WarningsOnUpdate returns warnings to the client performing the update.
 	// WarningsOnUpdate is invoked after default fields in the object have been filled in
 	// and after ValidateUpdate has passed, before Canonicalize is called, and before the object is persisted.
