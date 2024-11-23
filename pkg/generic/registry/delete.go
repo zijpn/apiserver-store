@@ -291,8 +291,10 @@ func (r *Store) updateForGracefulDeletionAndFinalizers(ctx context.Context, _ st
 	lastGraceful := int64(0)
 	var pendingFinalizers bool
 
-	if err := deleteValidation(ctx, obj); err != nil {
-		return false, obj, err
+	if deleteValidation != nil {
+		if err := deleteValidation(ctx, obj); err != nil {
+			return false, obj, err
+		}
 	}
 
 	graceful, pendingGraceful, err := rest.BeforeDelete(r.DeleteStrategy, ctx, obj, options)
