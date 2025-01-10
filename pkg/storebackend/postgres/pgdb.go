@@ -40,8 +40,9 @@ func (p *pgdb) Initialize(db *sql.DB, cfg *storebackend.Config) error {
 
 	p.schema = cfg.GroupResource.Group
 	p.table = cfg.GroupResource.Resource
+	p.db = db
 
-	err = p.setup(db)
+	err = p.setup()
 	if err != nil {
 		return fmt.Errorf("unable to setup postgres db for storage. %v", err)
 	}
@@ -59,13 +60,13 @@ func (p *pgdb) Initialize(db *sql.DB, cfg *storebackend.Config) error {
 	return nil
 }
 
-func (p *pgdb) setup(db *sql.DB) error {
+func (p *pgdb) setup() error {
 	scriptPath := filepath.Join("postgres", _SETUP)
 	content, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return fmt.Errorf("failed to read setup file: %v", err)
 	}
-	_, err = db.Exec(string(content))
+	_, err = p.db.Exec(string(content))
 	if err != nil {
 		return fmt.Errorf("failed to execute setup: %v", err)
 	}
