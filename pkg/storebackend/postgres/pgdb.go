@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	unique_key_voilation = errors.New("unique key violation")
+	errUnique_key_voilation = errors.New("unique key violation")
 )
 
 type pgdb struct {
@@ -35,7 +35,7 @@ func (p *pgdb) Initialize(db *sql.DB, cfg *storebackend.Config) error {
 	// check if connection is alive.
 	err := db.Ping()
 	if err != nil {
-		return fmt.Errorf("Failed to connect to the database: %v", err)
+		return fmt.Errorf("failed to connect to the database: %v", err)
 	}
 
 	p.schema = cfg.GroupResource.Group
@@ -65,7 +65,7 @@ func (p *pgdb) setup(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to read setup file: %v", err)
 	}
-	_, err = p.db.Exec(string(content))
+	_, err = db.Exec(string(content))
 	if err != nil {
 		return fmt.Errorf("failed to execute setup: %v", err)
 	}
@@ -76,7 +76,7 @@ func (p *pgdb) createGroupSchema() (bool, error) {
 	var created bool
 	err := p.db.QueryRow(qSchemaIf, p.schema).Scan(&created)
 	if err != nil {
-		return false, fmt.Errorf("Unable to check pg schema for resource: %v", err)
+		return false, fmt.Errorf("unable to check pg schema for resource: %v", err)
 	}
 
 	return created, nil
@@ -128,7 +128,7 @@ func (p *pgdb) insertEntry(key storebackend.Key, data []byte) error {
 		if pgErr, ok := err.(*pq.Error); ok {
 			switch pgErr.Code {
 			case "U0001":
-				return unique_key_voilation
+				return errUnique_key_voilation
 			default:
 				return pgErr
 			}

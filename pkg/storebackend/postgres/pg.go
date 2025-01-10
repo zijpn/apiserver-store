@@ -73,7 +73,7 @@ func (r *PostgresDB[T1]) Get(ctx context.Context, key storebackend.Key) (T1, err
 func (r *PostgresDB[T1]) List(ctx context.Context, visitorFunc func(context.Context, storebackend.Key, T1)) error {
 	rows, err := r.pgdb.retrieveDataList(nil) // transaction managed by procedures
 	if err != nil {
-		return fmt.Errorf("Unable to fetch resource list %v", err)
+		return fmt.Errorf("unable to fetch resource list %v", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -81,7 +81,7 @@ func (r *PostgresDB[T1]) List(ctx context.Context, visitorFunc func(context.Cont
 		var namespace string
 		var b []byte
 		if err := rows.Scan(&namespace, &name, &b); err != nil {
-			return fmt.Errorf("Unable to fetch resource list, failed to scan row: %v", err)
+			return fmt.Errorf("unable to fetch resource list, failed to scan row: %v", err)
 		}
 
 		key := storebackend.Key{
@@ -123,7 +123,7 @@ func (r *PostgresDB[T1]) Create(ctx context.Context, key storebackend.Key, obj T
 	}
 	err = r.pgdb.insertEntry(key, buf.Bytes())
 	if err != nil {
-		if errors.Is(err, unique_key_voilation) {
+		if errors.Is(err, errUnique_key_voilation) {
 			return fmt.Errorf("AlreadyExists")
 		}
 	}
