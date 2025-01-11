@@ -1,13 +1,13 @@
-CREATE OR REPLACE PROCEDURE check_and_create_schema(schema_name TEXT, OUT schema_created BOOLEAN)
+CREATE OR REPLACE PROCEDURE check_and_create_schema(p_schema_name TEXT, OUT schema_created BOOLEAN)
 LANGUAGE plpgsql
 AS $$
 BEGIN
     -- Check if the schema exists
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.schemata WHERE schema_name = schema_name
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = p_schema_name
     ) THEN
         -- Create the schema if it doesn't exist
-        EXECUTE format('CREATE SCHEMA %I', schema_name);
+        EXECUTE format('CREATE SCHEMA %I', p_schema_name);
         schema_created := TRUE;  -- Schema was created
     ELSE
         schema_created := FALSE;  -- Schema already exists
@@ -15,7 +15,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE create_table_in_schema(schema_name TEXT, table_name TEXT, OUT table_created BOOLEAN)
+CREATE OR REPLACE PROCEDURE create_table_in_schema(schema_name TEXT, t_table_name TEXT, OUT table_created BOOLEAN)
 LANGUAGE plpgsql
 AS $$
 BEGIN
@@ -23,19 +23,19 @@ BEGIN
     IF NOT EXISTS (
         SELECT FROM information_schema.tables
         WHERE table_schema = schema_name
-        AND table_name = table_name
+        AND table_name = t_table_name
     ) THEN
         -- Construct the SQL statement to create the table
         EXECUTE format('CREATE TABLE %I.%I (
             namespace TEXT,
             name TEXT NOT NULL,
-            data BYTEA
+            data BYTEA,
             PRIMARY KEY (namespace, name)
-        )', schema_name, table_name);
+        )', schema_name, t_table_name);
 
         -- Construct the SQL statement to create the index on namespace and name
         EXECUTE format('CREATE INDEX idx_%I_%I_namespace_name ON %I.%I (namespace, name)',
-            schema_name, table_name, schema_name, table_name);
+            schema_name, t_table_name, schema_name, t_table_name);
 
         table_created := TRUE;  -- Table was created
     ELSE
@@ -60,12 +60,13 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE retrieve_data_list(schema_name TEXT, table_name TEXT, OUT result_set SETOF RECORD)
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION retrieve_data_list(
+    schema_name TEXT,
+    table_name TEXT
+) RETURNS TABLE (namespace TEXT, name TEXT, data BYTEA)
+LANGUAGE plpgsql AS $$
 BEGIN
-    -- Construct the SQL statement to retrieve the data list
-    RETURN QUERY EXECUTE format('SELECT namespace, name, data FROM %I.%I', schema_name, table_name)
+    RETURN QUERY EXECUTE format('SELECT namespace, name, data FROM %I.%I', schema_name, table_name);
 END;
 $$;
 
@@ -108,13 +109,3 @@ BEGIN
     USING p_namespace, p_name;
 END;
 $$;
-
-
-
-
-
-
-
-
-
-

@@ -71,7 +71,7 @@ func (r *PostgresDB[T1]) Get(ctx context.Context, key storebackend.Key) (T1, err
 
 // Retrieve retrieves data for the given key from the storage
 func (r *PostgresDB[T1]) List(ctx context.Context, visitorFunc func(context.Context, storebackend.Key, T1)) error {
-	rows, err := r.pgdb.retrieveDataList(nil) // transaction managed by procedures
+	rows, err := r.pgdb.retrieveDataList(nil)
 	if err != nil {
 		return fmt.Errorf("unable to fetch resource list %v", err)
 	}
@@ -207,7 +207,7 @@ func (r *PostgresDB[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx c
 				return err
 			}
 
-			err = r.pgdb.updateOnConflict(key, buf.Bytes(), tx)
+			err = r.pgdb.updateOnConflict(key, buf.Bytes(), tx) // done in the same transaction
 			if err != nil {
 				return err
 			}

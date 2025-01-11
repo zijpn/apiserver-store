@@ -16,9 +16,10 @@ const (
 	qSchemaIf = "CALL check_and_create_schema($1, $2)"
 	qTableIf  = "CALL create_table_in_schema($1, $2, $3)"
 	qEntry    = "CALL retrieve_data($1, $2, $3, $4, $5)"
-	qEntries  = "CALL retrieve_data_list($1, $2, $3, $4)"
-	qInsert   = "CALL insert_entry($1, $2, $3)"
-	qUpdate   = "CALL update_entry($1, $2, $3)"
+	qEntries  = "SELECT * FROM retrieve_data_list($1, $2)"
+	qInsert   = "CALL insert_entry($1, $2, $3, $4, $5)"
+	qUpdate   = "CALL update_entry($1, $2, $3, $4, $5)"
+	qdelete   = "CALL delete_entry($1, $2, $3 ,$4)"
 )
 
 var (
@@ -75,7 +76,7 @@ func (p *pgdb) setup() error {
 
 func (p *pgdb) createGroupSchema() (bool, error) {
 	var created bool
-	err := p.db.QueryRow(qSchemaIf, p.schema).Scan(&created)
+	err := p.db.QueryRow(qSchemaIf, p.schema, created).Scan(&created)
 	if err != nil {
 		return false, fmt.Errorf("unable to check pg schema for resource: %v", err)
 	}
@@ -85,7 +86,7 @@ func (p *pgdb) createGroupSchema() (bool, error) {
 
 func (p *pgdb) createResourceTable() (bool, error) {
 	var created bool
-	err := p.db.QueryRow(qTableIf, p.schema, p.table).Scan(&created)
+	err := p.db.QueryRow(qTableIf, p.schema, p.table, created).Scan(&created)
 	if err != nil {
 		return false, fmt.Errorf("failed to create resource for table %s: %v", p.table, err)
 	}
@@ -102,7 +103,7 @@ func (p *pgdb) retrieveData(key storebackend.Key, tx *sql.Tx) ([]byte, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to call retrieve data for resource %s: %v", key.NamespacedName, err)
+		return nil, fmt.Errorf("failed to call retrieve data for resource: %s name: %s error %v", p.table, key.Name, err)
 	}
 	return data, nil
 }
@@ -153,7 +154,7 @@ func (p *pgdb) updateOnConflict(key storebackend.Key, data []byte, tx *sql.Tx) e
 }
 
 func (p *pgdb) delete_entry(key storebackend.Key) error {
-	_, err := p.db.Exec(qUpdate, p.schema, p.table, key.Namespace, key.Name)
+	_, err := p.db.Exec(qdelete, p.schema, p.table, key.Namespace, key.Name)
 	if err != nil {
 		return err
 	}
