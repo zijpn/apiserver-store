@@ -164,7 +164,7 @@ func (r *PostgresDB[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx c
 		}
 	}()
 
-	rows, err := r.pgdb.retrieveDataList(tx)
+	rows, err := r.pgdb.retrieveDataList(nil)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (r *PostgresDB[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.K
 		}
 	}()
 
-	b, err := r.pgdb.retrieveData(key, tx)
+	b, err := r.pgdb.retrieveData(key, nil)
 	if err != nil {
 		return err
 	}

@@ -97,9 +97,9 @@ func (p *pgdb) retrieveData(key storebackend.Key, tx *sql.Tx) ([]byte, error) {
 	var data []byte
 	var err error
 	if tx != nil {
-		err = tx.QueryRow(qEntry, p.schema, p.table, key.Namespace, key.Name).Scan(&data)
+		err = tx.QueryRow(qEntry, p.schema, p.table, key.Namespace, key.Name, data).Scan(&data)
 	} else {
-		err = p.db.QueryRow(qEntry, p.schema, p.table, key.Namespace, key.Name).Scan(&data)
+		err = p.db.QueryRow(qEntry, p.schema, p.table, key.Namespace, key.Name, data).Scan(&data)
 	}
 
 	if err != nil {
