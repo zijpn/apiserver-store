@@ -28,7 +28,8 @@ func WithMaxIdleTime(mit time.Duration) Option {
 }
 
 func OpenDB(ctx context.Context, host string, port string, user string,
-	password string, dbname string, options ...Option) error {
+	password string, dbname string, options ...Option) (*sql.DB, error) {
+
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
@@ -47,8 +48,8 @@ func OpenDB(ctx context.Context, host string, port string, user string,
 	err = db.Ping()
 	if err != nil {
 		db.Close()
-		return fmt.Errorf("failed to connect to the database: %v", err)
+		return nil, fmt.Errorf("failed to connect to the database: %v", err)
 	}
 
-	return err
+	return db, nil
 }

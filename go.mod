@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.4.0
 	github.com/google/uuid v1.6.0
 	github.com/henderiw/logger v0.0.0-20230911123436-8655829b1abe
+	github.com/lib/pq v1.10.9
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	golang.org/x/sync v0.8.0
@@ -47,7 +48,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

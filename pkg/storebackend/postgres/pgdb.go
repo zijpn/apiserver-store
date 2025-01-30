@@ -2,10 +2,12 @@ package postgres
 
 import (
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"github.com/lib/pq"
@@ -24,7 +26,11 @@ const (
 
 var (
 	errUnique_key_voilation = errors.New("unique key violation")
+	tableRegex              = regexp.MustCompile(`([A-Z])`)
 )
+
+//go:embed storedp/setup.sql
+var setup embed.FS
 
 type pgdb struct {
 	db     *sql.DB
@@ -39,8 +45,8 @@ func (p *pgdb) Initialize(db *sql.DB, cfg *storebackend.Config) error {
 		return fmt.Errorf("failed to connect to the database: %v", err)
 	}
 
-	p.schema = cfg.GroupResource.Group
-	p.table = cfg.GroupResource.Resource
+	p.schema = convert_to_schema(cfg.GroupResource.Group)
+	p.table = convert_to_table(cfg.GroupResource.Resource)
 	p.db = db
 
 	err = p.setup()
@@ -62,8 +68,8 @@ func (p *pgdb) Initialize(db *sql.DB, cfg *storebackend.Config) error {
 }
 
 func (p *pgdb) setup() error {
-	scriptPath := filepath.Join("postgres", _SETUP)
-	content, err := os.ReadFile(scriptPath)
+	scriptPath := filepath.Join("storedp", _SETUP)
+	content, err := setup.ReadFile(scriptPath)
 	if err != nil {
 		return fmt.Errorf("failed to read setup file: %v", err)
 	}
@@ -159,4 +165,21 @@ func (p *pgdb) delete_entry(key storebackend.Key) error {
 		return err
 	}
 	return nil
+}
+
+// Valid API Groups  ******* Invalid API Groups  ***** PG (Valid)
+// gnmic.dev	              gnmic_dev          	   gnmic_dev
+// example.com	              Example.Com              example_com
+// k8s.io	                  k8s..io                  k8s__io
+// networking.k8s.io	      ne tworking.k8s.io       ne_tworking.k8s.io
+func convert_to_table(resource string) string {
+	// Regular expression to insert an underscore before each uppercase letter (except the first)
+	snake := tableRegex.ReplaceAllString(resource, "_$1")
+	// Convert to lowercase and remove leading underscore if present
+	return strings.TrimPrefix(strings.ToLower(snake), "_")
+}
+
+// K8s group is a valid DNS name. Except '.' rest of the charset are valid in pg schema.
+func convert_to_schema(group string) string {
+	return strings.ReplaceAll(group, ".", "_")
 }
