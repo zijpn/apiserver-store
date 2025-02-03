@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.4.0
 	github.com/google/uuid v1.6.0
 	github.com/henderiw/logger v0.0.0-20230911123436-8655829b1abe
+	github.com/lib/pq v1.10.9
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	golang.org/x/sync v0.8.0
