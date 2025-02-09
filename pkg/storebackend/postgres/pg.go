@@ -131,6 +131,26 @@ func (r *PostgresDB[T1]) Create(ctx context.Context, key storebackend.Key, obj T
 	return nil
 }
 
+// Apply data with the given key in the storage
+func (r *PostgresDB[T1]) Apply(ctx context.Context, key storebackend.Key, obj T1) error {
+	runtimeObj, err := convert(obj)
+	if err != nil {
+		return err
+	}
+	buf := new(bytes.Buffer)
+	if err := r.cfg.Codec.Encode(runtimeObj, buf); err != nil {
+		return err
+	}
+	err = r.pgdb.insertEntry(key, buf.Bytes())
+	if err != nil {
+		if errors.Is(err, errUnique_key_voilation) {
+			return fmt.Errorf("AlreadyExists")
+		}
+	}
+
+	return nil
+}
+
 // Update data with the given key in the storage
 func (r *PostgresDB[T1]) Update(ctx context.Context, key storebackend.Key, obj T1) error {
 	runtimeObj, err := convert(obj)

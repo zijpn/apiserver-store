@@ -128,7 +128,7 @@ func (r *badgerDB[T1]) Create(ctx context.Context, key storebackend.Key, obj T1)
 		if err == nil {
 			return fmt.Errorf("AlreadyExists")
 		}
-		if !errors.Is(badger.ErrKeyNotFound, err) {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
 			return err
 		}
 		runtimeObj, err := convert(obj)
@@ -139,6 +139,27 @@ func (r *badgerDB[T1]) Create(ctx context.Context, key storebackend.Key, obj T1)
 		if err := r.cfg.Codec.Encode(runtimeObj, buf); err != nil {
 			return err
 		}
+		return txn.Set(k, buf.Bytes())
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Update data with the given key in the storage
+func (r *badgerDB[T1]) Apply(ctx context.Context, key storebackend.Key, obj T1) error {
+	k := r.createKey(key)
+	runtimeObj, err := convert(obj)
+	if err != nil {
+		return err
+	}
+
+	buf := new(bytes.Buffer)
+	if err := r.cfg.Codec.Encode(runtimeObj, buf); err != nil {
+		return err
+	}
+
+	if err := r.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(k, buf.Bytes())
 	}); err != nil {
 		return err

@@ -99,29 +99,18 @@ func (r *mem[T1]) Create(ctx context.Context, key storebackend.Key, data T1) err
 	return nil
 }
 
+// Apply data with the given key in the storage
+func (r *mem[T1]) Apply(ctx context.Context, key storebackend.Key, obj T1) error {
+	r.update(ctx, key, obj)
+	return nil
+}
+
 // Update creates or updates the entry in the cache
 func (r *mem[T1]) Update(ctx context.Context, key storebackend.Key, data T1) error {
-	/*
-		exists := true
-		oldd, err := r.Get(ctx, key)
-		if err != nil {
-			exists = false
-		}
-	*/
 
 	// update the cache before calling the callback since the cb fn will use this data
 	r.update(ctx, key, data)
 
-	// // notify watchers based on the fact the data got modified or not
-	/*
-		if exists {
-			if !reflect.DeepEqual(oldd, data) {
-				// notify watchers
-			}
-		} else {
-			// notify watchers
-		}
-	*/
 	return nil
 }
 

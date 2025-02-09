@@ -95,31 +95,22 @@ func (r *file[T1]) Create(ctx context.Context, key storebackend.Key, data T1) er
 	return nil
 }
 
+func (r *file[T1]) Apply(ctx context.Context, key storebackend.Key, data T1) error {
+	if err := r.update(ctx, key, data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Upsert creates or updates the entry in the cache
 func (r *file[T1]) Update(ctx context.Context, key storebackend.Key, data T1) error {
-	/*
-		exists := true
-		oldd, err := r.Get(ctx, key)
-		if err != nil {
-			exists = false
-		}
-	*/
 
 	// update the cache before calling the callback since the cb fn will use this data
 	if err := r.update(ctx, key, data); err != nil {
 		return err
 	}
 
-	// // notify watchers based on the fact the data got modified or not
-	/*
-		if exists {
-			if !reflect.DeepEqual(oldd, data) {
-				// TODO watchers
-			}
-		} else {
-			// TODO watchers
-		}
-	*/
 	return nil
 }
 

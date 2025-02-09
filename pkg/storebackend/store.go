@@ -34,6 +34,9 @@ type Storer[T1 any] interface {
 	// Create data with the given key in the storage
 	Create(ctx context.Context, key Key, data T1) error
 
+	// Apply data with the given key in the storage
+	Apply(ctx context.Context, key Key, data T1) error
+
 	// Update data with the given key in the storage
 	Update(ctx context.Context, key Key, data T1) error
 
