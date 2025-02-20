@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 )
 
@@ -30,8 +31,10 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	ctx, span := r.Tracer.Start(ctx, fmt.Sprintf("%s:deleteCollection", r.DefaultQualifiedResource.Resource), trace.WithAttributes())
 	defer span.End()
 
+	namespace, _ := genericapirequest.NamespaceFrom(ctx)
+
 	log := log.FromContext(ctx)
-	log.Info("deleteCollection", "listOptions", listOptions)
+	log.Info("deleteCollection", "namespace", namespace, "listOptions", listOptions)
 
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
