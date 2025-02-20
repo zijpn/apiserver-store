@@ -31,7 +31,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Debug("deleteCollection")
+	log.Info("deleteCollection", "listOptions", listOptions)
 
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
@@ -72,6 +72,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 					errs <- err
 					return
 				}
+				log.Info("deleteCollection", "name", accessor.GetName(), "namespace", accessor.GetNamespace())
 				// DeepCopy the deletion options because individual graceful deleters communicate changes via a mutating
 				// function in the delete strategy called in the delete method.  While that is always ugly, it works
 				// when making a single call.  When making multiple calls via delete collection, the mutation applied to
