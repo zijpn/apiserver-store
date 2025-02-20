@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
+	"github.com/henderiw/apiserver-store/pkg/storebackend"
 	//"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -114,7 +115,7 @@ type Store struct {
 
 	CategoryList []string
 
-	//Storage storebackend.Storer[runtime.Object]
+	Storage storebackend.Storer[runtime.Object]
 }
 
 // CompleteWithOptions updates the store with the provided options and
