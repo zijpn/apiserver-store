@@ -11,8 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 )
 
@@ -31,13 +33,24 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	defer span.End()
 
 	log := log.FromContext(ctx)
-	log.Debug("deleteCollection")
-
+	namespace, ok := genericapirequest.NamespaceFrom(ctx)
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
-	} else {
-		listOptions = listOptions.DeepCopy()
 	}
+
+	// If the namespace exists, apply it to the field selector
+	if ok && namespace != "" {
+		if listOptions.FieldSelector == nil {
+			listOptions.FieldSelector = fields.OneTermEqualSelector("metadata.namespace", namespace)
+		} else {
+			listOptions.FieldSelector = fields.AndSelectors(
+				listOptions.FieldSelector,
+				fields.OneTermEqualSelector("metadata.namespace", namespace),
+			)
+		}
+	}
+	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "fieldSelector", listOptions)
+
 	var items []runtime.Object
 
 	// TODO(wojtek-t): Decide if we don't want to start workers more opportunistically.
@@ -72,6 +85,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 					errs <- err
 					return
 				}
+				log.Info("deleteCollection", "name", accessor.GetName(), "namespace", accessor.GetNamespace())
 				// DeepCopy the deletion options because individual graceful deleters communicate changes via a mutating
 				// function in the delete strategy called in the delete method.  While that is always ugly, it works
 				// when making a single call.  When making multiple calls via delete collection, the mutation applied to
@@ -109,6 +123,10 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			default:
+			}
+
+			if listOptions.FieldSelector != nil {
+				log.Debug("deleteCollection list", "field selector", listOptions.FieldSelector.String())
 			}
 
 			listObj, err := r.List(ctx, listOptions)
