@@ -125,6 +125,10 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 			default:
 			}
 
+			if listOptions.FieldSelector != nil {
+				log.Info("deleteCollection lisr", "field selector", listOptions.FieldSelector.String())
+			}
+
 			listObj, err := r.List(ctx, listOptions)
 			if err != nil {
 				return nil, err
