@@ -49,7 +49,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 			)
 		}
 	}
-	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "listOptions", listOptions)
+	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "fieldSelector", listOptions)
 
 	var items []runtime.Object
 
@@ -126,7 +126,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 			}
 
 			if listOptions.FieldSelector != nil {
-				log.Info("deleteCollection lisr", "field selector", listOptions.FieldSelector.String())
+				log.Debug("deleteCollection list", "field selector", listOptions.FieldSelector.String())
 			}
 
 			listObj, err := r.List(ctx, listOptions)
