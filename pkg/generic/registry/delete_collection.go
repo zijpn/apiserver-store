@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
@@ -31,16 +32,25 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	ctx, span := r.Tracer.Start(ctx, fmt.Sprintf("%s:deleteCollection", r.DefaultQualifiedResource.Resource), trace.WithAttributes())
 	defer span.End()
 
-	namespace, _ := genericapirequest.NamespaceFrom(ctx)
-
 	log := log.FromContext(ctx)
-	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "listOptions", listOptions)
-
+	namespace, ok := genericapirequest.NamespaceFrom(ctx)
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
-	} else {
-		listOptions = listOptions.DeepCopy()
 	}
+
+	// If the namespace exists, apply it to the field selector
+	if ok && namespace != "" {
+		if listOptions.FieldSelector == nil {
+			listOptions.FieldSelector = fields.OneTermEqualSelector("metadata.namespace", namespace)
+		} else {
+			listOptions.FieldSelector = fields.AndSelectors(
+				listOptions.FieldSelector,
+				fields.OneTermEqualSelector("metadata.namespace", namespace),
+			)
+		}
+	}
+	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "listOptions", listOptions)
+
 	var items []runtime.Object
 
 	// TODO(wojtek-t): Decide if we don't want to start workers more opportunistically.
