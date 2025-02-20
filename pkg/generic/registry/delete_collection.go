@@ -34,7 +34,7 @@ func (r *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	namespace, _ := genericapirequest.NamespaceFrom(ctx)
 
 	log := log.FromContext(ctx)
-	log.Info("deleteCollection", "namespace", namespace, "listOptions", listOptions)
+	log.Info("deleteCollection", "gr", r.DefaultQualifiedResource.String(), "namespace", namespace, "listOptions", listOptions)
 
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
