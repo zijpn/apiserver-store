@@ -38,6 +38,7 @@ func NewStore[T1 any]() storebackend.Storer[T1] {
 type mem[T1 any] struct {
 	m  sync.RWMutex
 	db map[storebackend.Key]T1
+	keyLocks sync.Map
 }
 
 // Get return the type
@@ -77,10 +78,20 @@ func (r *mem[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context.
 }
 
 func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) error {
+	// Get or create a per-key mutex
+	lockIface, _ := r.keyLocks.LoadOrStore(key, &sync.Mutex{})
+	lock := lockIface.(*sync.Mutex)
+
+	lock.Lock()
+	defer lock.Unlock()
+	
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	obj := r.db[key]
+	obj, ok := r.db[key]
+	if !ok {
+		return fmt.Errorf("key not found: %s", key.String())
+	}
 	if updateFunc != nil {
 		r.db[key] = updateFunc(ctx, obj)
 	}
@@ -94,7 +105,6 @@ func (r *mem[T1]) Create(ctx context.Context, key storebackend.Key, data T1) err
 	}
 	// update the cache before calling the callback since the cb fn will use this data
 	r.update(ctx, key, data)
-
 	// notify watchers
 	return nil
 }
@@ -110,7 +120,7 @@ func (r *mem[T1]) Update(ctx context.Context, key storebackend.Key, data T1) err
 
 	// update the cache before calling the callback since the cb fn will use this data
 	r.update(ctx, key, data)
-
+	r.keyLocks.LoadOrStore(key, &sync.Mutex{})
 	return nil
 }
 
@@ -124,6 +134,7 @@ func (r *mem[T1]) delete(_ context.Context, key storebackend.Key) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	delete(r.db, key)
+	r.keyLocks.Delete(key)
 }
 
 // Delete deletes the entry in the cache
