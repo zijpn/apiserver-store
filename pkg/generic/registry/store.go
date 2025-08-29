@@ -6,7 +6,6 @@ import (
 
 	reststore "github.com/henderiw/apiserver-store/pkg/rest"
 	"github.com/henderiw/apiserver-store/pkg/storebackend"
-	//"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -19,7 +18,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
 )
 
 var _ rest.StandardStorage = &Store{}

@@ -36,8 +36,8 @@ func NewStore[T1 any]() storebackend.Storer[T1] {
 }
 
 type mem[T1 any] struct {
-	m  sync.RWMutex
-	db map[storebackend.Key]T1
+	m        sync.RWMutex
+	db       map[storebackend.Key]T1
 	keyLocks sync.Map
 }
 
@@ -84,7 +84,7 @@ func (r *mem[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, upd
 
 	lock.Lock()
 	defer lock.Unlock()
-	
+
 	r.m.Lock()
 	defer r.m.Unlock()
 

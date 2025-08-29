@@ -70,7 +70,7 @@ func (r *file[T1]) UpdateWithFn(ctx context.Context, updateFunc func(ctx context
 }
 
 func (r *file[T1]) UpdateWithKeyFn(ctx context.Context, key storebackend.Key, updateFunc func(ctx context.Context, obj T1) T1) error {
-	obj, err:= r.readFile(ctx, key)
+	obj, err := r.readFile(ctx, key)
 	if err != nil {
 		return err
 	}
