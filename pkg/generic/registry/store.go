@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	reststore "github.com/zijpn/apiserver-store/pkg/rest"
-	"github.com/zijpn/apiserver-store/pkg/storebackend"
+	reststore "github.com/henderiw/apiserver-store/pkg/rest"
+	"github.com/henderiw/apiserver-store/pkg/storebackend"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/apimachinery/pkg/api/meta"

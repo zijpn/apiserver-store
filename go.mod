@@ -1,4 +1,4 @@
-module github.com/zijpn/apiserver-store
+module github.com/henderiw/apiserver-store
 
 go 1.24.0
 
